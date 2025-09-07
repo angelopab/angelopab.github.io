@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+    .bubble {
+      position: fixed;
+      bottom: 100px;
+      right: 40px;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 20px;
+      padding: 12px 18px;
+      border-radius: 30px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      opacity: 0;
+      animation: showBubble 1s ease-out 0s forwards, hideBubble 1s ease-in 10s forwards;
+    }
+
+    @keyframes showBubble {
+      0% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes hideBubble {
+      0% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(20px); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bubble" id="bubble">
+    👋 Like what you see? Tap FOLLOW to support the stream! 💜
+  </div>
+
+  <script>
+    const bubble = document.getElementById('bubble');
+    setInterval(() => {
+      bubble.style.animation = 'none';
+      void bubble.offsetWidth;
+      bubble.style.animation = 'showBubble 1s ease-out, hideBubble 1s ease-in 10s';
+    }, 180000); // every 3 minutes
+  </script>
+</body>
+</html>
