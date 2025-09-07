@@ -1,0 +1,44 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      margin: 0;
+      background: transparent;
+      font-family: Arial, sans-serif;
+      font-size: 36px;
+      color: white;
+    }
+    .clock {
+      display: flex;
+      align-items: center;
+    }
+    .flag {
+      width: 40px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="clock">
+    <img class="flag" src="https://flagcdn.com/w40/ro.png" alt="Romania Flag">
+    <span id="time">--:--</span>
+  </div>
+
+  <script>
+    function updateTime() {
+      const now = new Date().toLocaleTimeString('ro-RO', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'Europe/Bucharest'
+      });
+      document.getElementById('time').textContent = now;
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+  </script>
+</body>
+</html>
