@@ -22,7 +22,7 @@
       border-radius: 30px;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
       opacity: 0;
-      animation: showBubble 1s ease-out 0s forwards, hideBubble 1s ease-in 10s forwards;
+      animation: showBubble 2s ease-out 0s forwards, hideBubble 2s ease-in 20s forwards;
     }
 
     @keyframes showBubble {
@@ -47,7 +47,7 @@
       bubble.style.animation = 'none';
       void bubble.offsetWidth;
       bubble.style.animation = 'showBubble 1s ease-out, hideBubble 1s ease-in 10s';
-    }, 5000); // every 3 minutes
+    }, 10000); // every 3 minutes
   </script>
 </body>
 </html>
