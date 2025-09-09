@@ -4,16 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <style>
-    body {
+    html, body {
       margin: 0;
       padding: 0;
       background: transparent;
       overflow: hidden;
+      width: 100%;
+      height: 100%;
     }
     .bubble {
-      position: fixed;
-      bottom: 100px;
-      right: 40px;
+      display: inline-block;
       background-color: rgba(0, 0, 0, 0.8);
       color: white;
       font-family: Arial, sans-serif;
@@ -22,7 +22,7 @@
       border-radius: 30px;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
       opacity: 0;
-      animation: showBubble 2s ease-out 0s forwards, hideBubble 2s ease-in 20s forwards;
+      animation: showBubble var(--fade-in, 2s) ease-out 0s forwards, hideBubble var(--fade-out, 2s) ease-in calc(var(--visible-duration, 8s) + var(--fade-in, 2s)) forwards;
     }
 
     @keyframes showBubble {
@@ -42,12 +42,30 @@
   </div>
 
   <script>
+    function getParam(key, fallback) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(key) || fallback;
+    }
+
     const bubble = document.getElementById('bubble');
-    setInterval(() => {
+
+    const fadeIn = getParam("fadeIn", "2s");
+    const fadeOut = getParam("fadeOut", "2s");
+    const visible = getParam("visible", "8s");
+    const interval = parseInt(getParam("interval", "60000"));
+
+    bubble.style.setProperty('--fade-in', fadeIn);
+    bubble.style.setProperty('--fade-out', fadeOut);
+    bubble.style.setProperty('--visible-duration', visible);
+
+    function showBubble() {
       bubble.style.animation = 'none';
       void bubble.offsetWidth;
-      bubble.style.animation = 'showBubble 1s ease-out, hideBubble 1s ease-in 10s';
-    }, 10000); // every 3 minutes
+      bubble.style.animation = `showBubble ${fadeIn} ease-out, hideBubble ${fadeOut} ease-in calc(${visible} + ${fadeIn})`;
+    }
+
+    setInterval(showBubble, interval);
+    showBubble();
   </script>
 </body>
 </html>
