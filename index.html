@@ -27,10 +27,14 @@
   
   <link rel="stylesheet" href="assets/css/style.css?v=1.0.0">
   <link rel="stylesheet" href="assets/css/schedule-widget.css?v=1.0.0">
+  <link rel="stylesheet" href="assets/css/live-badge.css?v=1.0.0">
 </head>
 <body>
   <div class="container">
-    <img src="assets/img/avatar.png" alt="AngeloPab" class="avatar">
+    <div class="live-avatar" data-live="off">
+  <img src="assets/img/avatar.png" alt="AngeloPab" class="live-avatar__img avatar">
+  <span class="live-pill" aria-hidden="true">LIVE NOW</span>
+</div>
     <h1>@AngeloPab</h1>
     <div class="tagline">Content Creator</div>
 
@@ -76,5 +80,6 @@
 
 <div class="email">📬 Contact: <a href="mailto:contact@angelopab.com">contact@angelopab.com</a></div>
   </div>
+  <script src="assets/js/live-badge.js?v=1.0.0"></script>
 </body>
 </html>
