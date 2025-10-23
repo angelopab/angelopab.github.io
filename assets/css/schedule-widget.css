@@ -1,0 +1,16 @@
+/* Scoped schedule styles */
+  .ap-schedule { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, sans-serif; color:#eaeaea; text-align:center; margin: 16px 0; }
+  .ap-schedule .ap-card { background:#141414; border-radius:12px; padding:18px; box-shadow:0 6px 14px rgba(0,0,0,.25); border-top:4px solid #2864d4; width:100%;max-width:inherit; margin: 0 auto 20px; }
+  .ap-schedule .ap-header { margin-bottom:4px; }
+  .ap-schedule h2 { margin:0; font-size:1.15rem; color:#fff; }
+  .ap-schedule small { color:#a0a0a0; display:block; margin-top:4px; }
+  .ap-schedule .ap-next { font-weight:600; line-height:1.4; margin-top:8px; }
+  .ap-schedule .ap-next span { color:#a0a0a0; font-weight:500; }
+  .ap-schedule .ap-btn { margin-top:12px; border:0; background:#2864d4; color:white; padding:10px 12px; border-radius:8px; font-weight:600; cursor:pointer; transition:background .2s ease; width:100%; }
+  .ap-schedule .ap-btn:hover { background:#2596be; }
+  .ap-schedule .ap-list { margin:12px 0 0; padding:0; list-style:none; text-align:left; }
+  .ap-schedule .ap-list li { padding:8px 0; border-top:1px solid #2a2a2a; }
+  .ap-schedule .ap-list time { font-variant-numeric:tabular-nums; white-space:nowrap; color:#9bbcff; }
+  .ap-schedule .ap-game { color:#e9ffd0; }
+  .ap-schedule .ap-error { margin-top:10px; color:#ffd1d1; }
+  .ap-schedule .ap-note { margin-top:10px; font-size:.8rem; color:#777; }
