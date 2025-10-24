@@ -26,23 +26,41 @@
         unfolded.push(ln);
       }
     }
+
+    // Default timezone from calendar (if present)
+    let defaultTZ = 'UTC';
+    for (const ln of unfolded) {
+      if (ln.startsWith('X-WR-TIMEZONE:')) {
+        defaultTZ = ln.split(':')[1].trim() || 'UTC';
+        break;
+      }
+    }
+
     const events = [];
     let cur = null;
     for (const line of unfolded) {
-      if (line.startsWith('BEGIN:VEVENT')) cur = {};
+      if (line.startsWith('BEGIN:VEVENT')) cur = { _params: {} };
       else if (line.startsWith('END:VEVENT')) { if (cur) events.push(cur); cur = null; }
       else if (cur && line.includes(':')) {
         const idx = line.indexOf(':');
         const rawKey = line.slice(0, idx);
         const val = line.slice(idx + 1);
-        const key = rawKey.split(';')[0].toUpperCase();
-        cur[key] = val;
+        const [key, ...params] = rawKey.split(';');
+        const upKey = key.toUpperCase();
+        cur[upKey] = val;
+        // capture TZID (e.g., DTSTART;TZID=Europe/Bucharest)
+        for (const p of params) {
+          const [pKey, pVal] = p.split('=');
+          if (pKey && pKey.toUpperCase() === 'TZID') cur._params[upKey + ':TZID'] = pVal;
+        }
       }
     }
+
     const now = Date.now();
     return events.map(e => {
-      const dt = e.DTSTART || e['DTSTART;TZID'] || '';
-      const start = toDate(dt);
+      const tzid = e._params['DTSTART:TZID'] || defaultTZ;
+      const dt = e.DTSTART || '';
+      const start = toDate(dt, tzid);
       return {
         start,
         fields: {
@@ -54,12 +72,37 @@
     }).filter(x => x.start && x.start.getTime() > now)
       .sort((a,b) => a.start - b.start);
 
-    function toDate(s) {
+    function toDate(s, tzid) {
       const m = s.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)/);
       if (!m) return null;
-      const [_,Y,Mo,D,h,mi,se] = m;
-      // Always interpret as UTC so local timezone is applied correctly later
-      return new Date(Date.UTC(+Y,+Mo-1,+D,+h,+mi,+se));
+      const [_,Y,Mo,D,h,mi,se,z] = m;
+      const asUTC = Date.UTC(+Y,+Mo-1,+D,+h,+mi,+se);
+      if (z === 'Z') return new Date(asUTC); // already UTC
+
+      // Wall time is in tzid (e.g., Europe/Bucharest). Convert to UTC safely (DST aware).
+      const epoch = wallTimeToUTC({Y:+Y,Mo:+Mo,D:+D,h:+h,mi:+mi,se:+se}, tzid);
+      return new Date(epoch);
+    }
+
+    // Convert a wall-clock time in IANA tz to UTC epoch (ms), DST-safe
+    function wallTimeToUTC(c, tz) {
+      // initial guess: interpret wall time as UTC
+      const guess = Date.UTC(c.Y, c.Mo - 1, c.D, c.h, c.mi, c.se);
+      const offset = tzOffsetMillis(tz, guess); // local(tz)-UTC in ms
+      return guess - offset;
+    }
+
+    function tzOffsetMillis(tz, epochMs) {
+      const dtf = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz, hour12: false,
+        year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit', second:'2-digit'
+      });
+      const parts = dtf.formatToParts(new Date(epochMs));
+      const map = {};
+      for (const p of parts) map[p.type] = p.value;
+      const asLocal = Date.UTC(+map.year, +map.month-1, +map.day, +map.hour, +map.minute, +map.second);
+      return asLocal - epochMs; // positive if tz ahead of UTC
     }
   }
 
@@ -71,7 +114,7 @@
   }
 
   function escapeHtml(s) {
-    return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+    return (s||'').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[c]));
   }
 
   async function load() {
