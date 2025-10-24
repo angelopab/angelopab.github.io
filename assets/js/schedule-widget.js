@@ -57,9 +57,9 @@
     function toDate(s) {
       const m = s.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)/);
       if (!m) return null;
-      const [_,Y,Mo,D,h,mi,se,z] = m;
-      return z==='Z' ? new Date(Date.UTC(+Y,+Mo-1,+D,+h,+mi,+se))
-                     : new Date(+Y,+Mo-1,+D,+h,+mi,+se);
+      const [_,Y,Mo,D,h,mi,se] = m;
+      // Always interpret as UTC so local timezone is applied correctly later
+      return new Date(Date.UTC(+Y,+Mo-1,+D,+h,+mi,+se));
     }
   }
 
@@ -71,7 +71,7 @@
   }
 
   function escapeHtml(s) {
-    return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
   }
 
   async function load() {
