@@ -18,9 +18,7 @@
 
   function normalizeTZID(tz) {
     if (!tz) return null;
-    // Some ICS exports prefix TZID with a slash, e.g. "/Europe/Bucharest"
     tz = String(tz).trim().replace(/^[\\/]+/, '');
-    // Very defensive: reject obviously bad strings
     if (!/^[A-Za-z]+\/[A-Za-z0-9_+-]+$/.test(tz)) return null;
     return tz;
   }
@@ -36,7 +34,6 @@
       }
     }
 
-    // Optional calendar default timezone
     let defaultTZ = null;
     for (const ln of unfolded) {
       if (ln.startsWith('X-WR-TIMEZONE:')) {
@@ -85,17 +82,14 @@
       if (!m) return null;
       const [_,Y,Mo,D,h,mi,se,z] = m;
       const asUTC = Date.UTC(+Y,+Mo-1,+D,+h,+mi,+se);
-      if (z === 'Z') return new Date(asUTC); // already UTC
-
-      // Wall time is in tzid (e.g., Europe/Bucharest). Convert to UTC safely (DST aware).
+      if (z === 'Z') return new Date(asUTC);
       const epoch = wallTimeToUTC({Y:+Y,Mo:+Mo,D:+D,h:+h,mi:+mi,se:+se}, tzid);
       return new Date(epoch);
     }
 
-    // Convert a wall-clock time in IANA tz to UTC epoch (ms), DST-safe
     function wallTimeToUTC(c, tz) {
       const guess = Date.UTC(c.Y, c.Mo - 1, c.D, c.h, c.mi, c.se);
-      const offset = tzOffsetMillis(tz, guess); // local(tz)-UTC in ms
+      const offset = tzOffsetMillis(tz, guess);
       return guess - offset;
     }
 
@@ -110,23 +104,26 @@
         const map = {};
         for (const p of parts) map[p.type] = p.value;
         const asLocal = Date.UTC(+map.year, +map.month-1, +map.day, +map.hour, +map.minute, +map.second);
-        return asLocal - epochMs; // positive if tz ahead of UTC
+        return asLocal - epochMs;
       } catch (e) {
-        // Fallback if tz not supported in this environment
         return 0;
       }
     }
   }
 
   function fmtDate(dt) {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    const use12h = tz.startsWith('America/') || tz.startsWith('Canada/');
     return new Intl.DateTimeFormat(undefined, {
       weekday:'short', day:'2-digit', month:'short',
-      hour:'2-digit', minute:'2-digit'
+      hour:'2-digit', minute:'2-digit',
+      hour12: use12h ? true : false,
+      hourCycle: use12h ? 'h12' : 'h23'
     }).format(dt).replace(',', '');
   }
 
   function escapeHtml(s) {
-    return (s||'').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[c]));
+    return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
   }
 
   async function load() {
