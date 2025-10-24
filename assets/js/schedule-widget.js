@@ -16,6 +16,15 @@
     return sum.trim();
   }
 
+  function normalizeTZID(tz) {
+    if (!tz) return null;
+    // Some ICS exports prefix TZID with a slash, e.g. "/Europe/Bucharest"
+    tz = String(tz).trim().replace(/^[\\/]+/, '');
+    // Very defensive: reject obviously bad strings
+    if (!/^[A-Za-z]+\/[A-Za-z0-9_+-]+$/.test(tz)) return null;
+    return tz;
+  }
+
   function parseICS(icsText) {
     const lines = icsText.replace(/\r/g,'').split('\n');
     const unfolded = [];
@@ -27,11 +36,11 @@
       }
     }
 
-    // Default timezone from calendar (if present)
-    let defaultTZ = 'UTC';
+    // Optional calendar default timezone
+    let defaultTZ = null;
     for (const ln of unfolded) {
       if (ln.startsWith('X-WR-TIMEZONE:')) {
-        defaultTZ = ln.split(':')[1].trim() || 'UTC';
+        defaultTZ = normalizeTZID(ln.split(':')[1]);
         break;
       }
     }
@@ -48,7 +57,6 @@
         const [key, ...params] = rawKey.split(';');
         const upKey = key.toUpperCase();
         cur[upKey] = val;
-        // capture TZID (e.g., DTSTART;TZID=Europe/Bucharest)
         for (const p of params) {
           const [pKey, pVal] = p.split('=');
           if (pKey && pKey.toUpperCase() === 'TZID') cur._params[upKey + ':TZID'] = pVal;
@@ -58,7 +66,7 @@
 
     const now = Date.now();
     return events.map(e => {
-      const tzid = e._params['DTSTART:TZID'] || defaultTZ;
+      const tzid = normalizeTZID(e._params['DTSTART:TZID']) || defaultTZ || 'UTC';
       const dt = e.DTSTART || '';
       const start = toDate(dt, tzid);
       return {
@@ -86,23 +94,27 @@
 
     // Convert a wall-clock time in IANA tz to UTC epoch (ms), DST-safe
     function wallTimeToUTC(c, tz) {
-      // initial guess: interpret wall time as UTC
       const guess = Date.UTC(c.Y, c.Mo - 1, c.D, c.h, c.mi, c.se);
       const offset = tzOffsetMillis(tz, guess); // local(tz)-UTC in ms
       return guess - offset;
     }
 
     function tzOffsetMillis(tz, epochMs) {
-      const dtf = new Intl.DateTimeFormat('en-US', {
-        timeZone: tz, hour12: false,
-        year:'numeric', month:'2-digit', day:'2-digit',
-        hour:'2-digit', minute:'2-digit', second:'2-digit'
-      });
-      const parts = dtf.formatToParts(new Date(epochMs));
-      const map = {};
-      for (const p of parts) map[p.type] = p.value;
-      const asLocal = Date.UTC(+map.year, +map.month-1, +map.day, +map.hour, +map.minute, +map.second);
-      return asLocal - epochMs; // positive if tz ahead of UTC
+      try {
+        const dtf = new Intl.DateTimeFormat('en-US', {
+          timeZone: tz, hour12: false,
+          year:'numeric', month:'2-digit', day:'2-digit',
+          hour:'2-digit', minute:'2-digit', second:'2-digit'
+        });
+        const parts = dtf.formatToParts(new Date(epochMs));
+        const map = {};
+        for (const p of parts) map[p.type] = p.value;
+        const asLocal = Date.UTC(+map.year, +map.month-1, +map.day, +map.hour, +map.minute, +map.second);
+        return asLocal - epochMs; // positive if tz ahead of UTC
+      } catch (e) {
+        // Fallback if tz not supported in this environment
+        return 0;
+      }
     }
   }
 
