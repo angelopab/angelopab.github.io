@@ -1,172 +1,222 @@
-(function() {
-  const PROXY_URL = 'https://api.angelopab.com/twitch-ics';
-  const EXPANDED_COUNT = 3;
+/* AngeloPab – Weekly schedule (simple + "4 Mondays" fallback)
+   - Reads ICS from your Worker
+   - If only 1 BYDAY across all events => show next 4 occurrences (4 weeks)
+   - If 2–7 BYDAYs => show all days occurring in the next 7 days (one per weekday)
+*/
 
-  function extractGame(fields) {
-    const cat = (fields.CATEGORIES || '').trim();
-    if (cat) return cat;
-    const desc = fields.DESCRIPTION || '';
-    const m = desc.match(/(?:Game|Category)\s*:\s*([^\n\r]+)/i);
-    if (m) return m[1].trim();
-    const sum = fields.SUMMARY || '';
-    const dash = sum.split('—')[1] || sum.split('-')[1];
-    if (dash) return dash.trim();
-    const bracket = sum.match(/\[([^\]]+)\]/);
-    if (bracket) return bracket[1].trim();
-    return sum.trim();
-  }
+(function () {
+  const ICS_URL = 'https://api.angelopab.com/twitch-ics';
 
-  function normalizeTZID(tz) {
-    if (!tz) return null;
-    tz = String(tz).trim().replace(/^[\\/]+/, '');
-    if (!/^[A-Za-z]+\/[A-Za-z0-9_+-]+$/.test(tz)) return null;
-    return tz;
-  }
+  const panel = document.querySelector('#ap-schedule');
+  if (!panel) return;
 
-  function parseICS(icsText) {
-    const lines = icsText.replace(/\r/g,'').split('\n');
-    const unfolded = [];
-    for (const ln of lines) {
-      if ((ln.startsWith(' ') || ln.startsWith('\t')) && unfolded.length) {
-        unfolded[unfolded.length - 1] += ln.slice(1);
-      } else {
-        unfolded.push(ln);
+  const nextEl   = panel.querySelector('[data-next]');
+  const listWrap = panel.querySelector('[data-list]');
+  const toggleBtn = panel.querySelector('[data-toggle]');
+
+  let expanded = false;
+  toggleBtn?.addEventListener('click', () => {
+    expanded = !expanded;
+    listWrap.hidden = !expanded;
+    toggleBtn.textContent = expanded ? 'Hide next streams' : 'Show next streams';
+  });
+
+  fetch(ICS_URL, { cache: 'no-store' })
+    .then(r => r.text())
+    .then(text => {
+      const evs = parseWeeklyEvents(text); // {tz, hour, minute, second, bydays[], title, game}
+      if (!evs.length) {
+        nextEl.textContent = 'No upcoming streams found.';
+        toggleBtn.disabled = true;
+        return;
+      }
+
+      const result = computeUpcoming(evs);
+
+      if (!result.length) {
+        nextEl.textContent = 'No upcoming streams found.';
+        toggleBtn.disabled = true;
+        return;
+      }
+
+      // Show the very next one
+      const first = result[0];
+      nextEl.innerHTML = `Next stream: <strong>${fmtDate(first.date)}</strong> — ${escapeHtml(first.game || first.title || 'TBA')} <span class="ap-all">(all platforms)</span>`;
+
+      // Show the rest
+      listWrap.innerHTML = result.slice(1).map(ev => `
+        <li class="ap-item">
+          <span class="ap-item-date">${fmtDate(ev.date)}</span>
+          <span class="ap-item-title">— ${escapeHtml(ev.game || ev.title || 'TBA')}</span>
+        </li>
+      `).join('');
+
+      toggleBtn.disabled = result.length <= 1;
+    })
+    .catch(() => {
+      nextEl.textContent = 'Unable to load schedule.';
+      toggleBtn.disabled = true;
+    });
+
+  // ---------- core logic ----------
+  function computeUpcoming(events) {
+    const now = new Date();
+
+    // Gather all distinct weekdays across events
+    const weekdaySet = new Set();
+    for (const ev of events) (ev.bydays || []).forEach(d => weekdaySet.add(d));
+    const uniqueWeekdays = [...weekdaySet];
+
+    // If only ONE weekday total -> show NEXT 4 occurrences of that weekday
+    if (uniqueWeekdays.length === 1) {
+      const wd = uniqueWeekdays[0];
+
+      // Pick the first event that defines time & tz for that weekday
+      const source = events.find(e => e.bydays.includes(wd));
+      const hh = source.hour, mm = source.minute || 0, ss = source.second || 0, tz = source.tz || 'UTC';
+      const title = source.title, game = source.game;
+
+      // First next date (>= now)
+      let cursor = nextWeekdayAtTime(now, wd, hh, mm, ss, tz);
+      const out = [];
+      for (let i = 0; i < 4; i++) {
+        out.push({ date: cursor, title, game });
+        cursor = new Date(cursor.getTime() + 7 * 864e5); // +1 week
+      }
+      return out;
+    }
+
+    // Otherwise: generate the next occurrence for EACH weekday within the next 7 days
+    const windowEnd = new Date(now.getTime() + 7 * 864e5);
+    const out = [];
+
+    for (const ev of events) {
+      const { hour, minute = 0, second = 0, tz = 'UTC', title, game } = ev;
+      for (const wd of ev.bydays || []) {
+        const next = nextWeekdayAtTime(now, wd, hour, minute, second, tz);
+        if (next >= now && next <= windowEnd) {
+          out.push({ date: next, title, game });
+        }
       }
     }
 
-    let defaultTZ = null;
-    for (const ln of unfolded) {
-      if (ln.startsWith('X-WR-TIMEZONE:')) {
-        defaultTZ = normalizeTZID(ln.split(':')[1]);
-        break;
-      }
-    }
+    out.sort((a, b) => a.date - b.date);
+    return out;
+  }
 
-    const events = [];
+  // ---------- ICS parsing (weekly only) ----------
+  function parseWeeklyEvents(text) {
+    const lines = unfold(text).filter(Boolean);
+    const out = [];
     let cur = null;
-    for (const line of unfolded) {
-      if (line.startsWith('BEGIN:VEVENT')) cur = { _params: {} };
-      else if (line.startsWith('END:VEVENT')) { if (cur) events.push(cur); cur = null; }
-      else if (cur && line.includes(':')) {
-        const idx = line.indexOf(':');
-        const rawKey = line.slice(0, idx);
-        const val = line.slice(idx + 1);
-        const [key, ...params] = rawKey.split(';');
-        const upKey = key.toUpperCase();
-        cur[upKey] = val;
-        for (const p of params) {
-          const [pKey, pVal] = p.split('=');
-          if (pKey && pKey.toUpperCase() === 'TZID') cur._params[upKey + ':TZID'] = pVal;
+    let calendarTZID = null;
+
+    for (const raw of lines) {
+      const line = raw.trim();
+
+      if (line === 'BEGIN:VEVENT') { cur = { bydays: [] }; continue; }
+      if (line === 'END:VEVENT') {
+        if (cur && cur.bydays.length && cur.hour != null) {
+          cur.tz = cur.tz || calendarTZID || 'UTC';
+          out.push(cur);
+        }
+        cur = null; continue;
+      }
+      if (!cur) continue;
+
+      if (line.startsWith('DTSTART')) {
+        const { hh, mi, ss, tz } = parseDT(line);
+        cur.hour = hh; cur.minute = mi; cur.second = ss;
+        if (tz) calendarTZID = tz, cur.tz = tz;
+      } else if (line.startsWith('SUMMARY:')) {
+        cur.title = line.slice(8);
+      } else if (line.startsWith('CATEGORIES:')) {
+        cur.game = line.slice(11);
+      } else if (line.startsWith('RRULE:')) {
+        const rule = parseRRule(line.slice(6));
+        if (rule.FREQ === 'WEEKLY' && rule.BYDAY) {
+          cur.bydays = rule.BYDAY.split(',').map(code => BYDAY_TO_INDEX[code]).filter(v => v != null);
         }
       }
     }
-
-    const now = Date.now();
-    return events.map(e => {
-      const tzid = normalizeTZID(e._params['DTSTART:TZID']) || defaultTZ || 'UTC';
-      const dt = e.DTSTART || '';
-      const start = toDate(dt, tzid);
-      return {
-        start,
-        fields: {
-          SUMMARY: e.SUMMARY || '',
-          DESCRIPTION: e.DESCRIPTION || '',
-          CATEGORIES: e.CATEGORIES || ''
-        }
-      };
-    }).filter(x => x.start && x.start.getTime() > now)
-      .sort((a,b) => a.start - b.start);
-
-    function toDate(s, tzid) {
-      const m = s.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)/);
-      if (!m) return null;
-      const [_,Y,Mo,D,h,mi,se,z] = m;
-      const asUTC = Date.UTC(+Y,+Mo-1,+D,+h,+mi,+se);
-      if (z === 'Z') return new Date(asUTC);
-      const epoch = wallTimeToUTC({Y:+Y,Mo:+Mo,D:+D,h:+h,mi:+mi,se:+se}, tzid);
-      return new Date(epoch);
-    }
-
-    function wallTimeToUTC(c, tz) {
-      const guess = Date.UTC(c.Y, c.Mo - 1, c.D, c.h, c.mi, c.se);
-      const offset = tzOffsetMillis(tz, guess);
-      return guess - offset;
-    }
-
-    function tzOffsetMillis(tz, epochMs) {
-      try {
-        const dtf = new Intl.DateTimeFormat('en-US', {
-          timeZone: tz, hour12: false,
-          year:'numeric', month:'2-digit', day:'2-digit',
-          hour:'2-digit', minute:'2-digit', second:'2-digit'
-        });
-        const parts = dtf.formatToParts(new Date(epochMs));
-        const map = {};
-        for (const p of parts) map[p.type] = p.value;
-        const asLocal = Date.UTC(+map.year, +map.month-1, +map.day, +map.hour, +map.minute, +map.second);
-        return asLocal - epochMs;
-      } catch (e) {
-        return 0;
-      }
-    }
+    return out;
   }
 
-  function fmtDate(dt) {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-    const use12h = tz.startsWith('America/') || tz.startsWith('Canada/');
-    return new Intl.DateTimeFormat(undefined, {
-      weekday:'short', day:'2-digit', month:'short',
-      hour:'2-digit', minute:'2-digit',
-      hour12: use12h ? true : false,
-      hourCycle: use12h ? 'h12' : 'h23'
-    }).format(dt).replace(',', '');
+  function unfold(text) {
+    return text.replace(/\r/g, '').split('\n').reduce((arr, line) => {
+      if (line.startsWith(' ') && arr.length) arr[arr.length - 1] += line.slice(1);
+      else arr.push(line);
+      return arr;
+    }, []);
+  }
+
+  function parseDT(line) {
+    // DTSTART;TZID=/Europe/Bucharest:20251107T210000  or  DTSTART:20251107T210000Z
+    const m = line.match(/^DTSTART(?:;TZID=([^:]+))?:(\d{8}T\d{6}Z?)/i);
+    if (!m) return {};
+    const tzRaw = m[1];
+    const tz = tzRaw ? tzRaw.replace(/^\/+/, '') : null;
+    const v = m[2];
+    const hh = +v.slice(9,11), mi = +v.slice(11,13), ss = +v.slice(13,15);
+    return { hh, mi, ss, tz };
+  }
+
+  function parseRRule(s) {
+    return s.split(';').reduce((acc, kv) => {
+      const [k, v] = kv.split('=');
+      acc[k.toUpperCase()] = v;
+      return acc;
+    }, {});
+  }
+
+  const BYDAY_TO_INDEX = { SU:0, MO:1, TU:2, WE:3, TH:4, FR:5, SA:6 };
+
+  // ---------- date helpers ----------
+  function nextWeekdayAtTime(afterDate, weekday, hh, mm, ss, timeZone) {
+    const d = new Date(afterDate.getTime());
+    const todayWd = d.getDay();
+    const nowSecs = d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds();
+    const targetSecs = hh*3600 + mm*60 + ss;
+
+    let addDays = (weekday - todayWd + 7) % 7;
+    if (addDays === 0 && nowSecs > targetSecs) addDays = 7;
+
+    d.setDate(d.getDate() + addDays);
+    return zonedCivilToDate(d.getFullYear(), d.getMonth()+1, d.getDate(), hh, mm, ss, timeZone);
+  }
+
+  function zonedCivilToDate(y, M, d, hh, mm, ss, timeZone) {
+    // Convert a civil time in `timeZone` to a real UTC Date
+    const asUTC = Date.UTC(y, M-1, d, hh, mm, ss);
+    const off = tzOffsetMs(new Date(asUTC), timeZone);
+    return new Date(asUTC - off);
+  }
+
+  function tzOffsetMs(date, timeZone) {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    const p = Object.fromEntries(fmt.formatToParts(date).map(x => [x.type, x.value]));
+    const asIfUTC = Date.UTC(+p.year, +p.month-1, +p.day, +p.hour, +p.minute, +p.second);
+    return asIfUTC - date.getTime();
+  }
+
+  // ---------- formatting ----------
+  function fmtDate(date) {
+    return date.toLocaleString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   function escapeHtml(s) {
-    return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+    return String(s || '').replace(/[&<>"']/g, m => (
+      { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]
+    ));
   }
-
-  async function load() {
-    const elNext = document.getElementById('ap-next');
-    const elList = document.getElementById('ap-list');
-    const elErr  = document.getElementById('ap-error');
-    const btn    = document.getElementById('ap-toggle');
-
-    try {
-      const res = await fetch(PROXY_URL, { cache: 'no-store' });
-      if (!res.ok) throw new Error('Proxy returned ' + res.status);
-      const text = await res.text();
-      const items = parseICS(text);
-
-      if (!items.length) { elNext.textContent = 'No upcoming streams found.'; return; }
-
-      const first = items[0];
-      const game = extractGame(first.fields) || 'Stream';
-      elNext.innerHTML = `Next stream: <time datetime="${first.start.toISOString()}">${fmtDate(first.start)}</time> — <span class="ap-game">${escapeHtml(game)}</span> <span>(all platforms)</span>`;
-
-      const more = items.slice(1, 1 + EXPANDED_COUNT);
-      elList.innerHTML = more.map(ev => {
-        const gm = extractGame(ev.fields) || 'Stream';
-        return `<li><time datetime="${ev.start.toISOString()}">${fmtDate(ev.start)}</time> — <span class="ap-game">${escapeHtml(gm)}</span></li>`;
-      }).join('');
-
-      btn.onclick = () => {
-        const open = !elList.hasAttribute('hidden');
-        if (open) {
-          elList.setAttribute('hidden','');
-          btn.setAttribute('aria-expanded','false');
-          btn.textContent = 'Show next streams';
-        } else {
-          elList.removeAttribute('hidden');
-          btn.setAttribute('aria-expanded','true');
-          btn.textContent = 'Hide next streams';
-        }
-      };
-    } catch (e) {
-      elErr.hidden = false;
-      elErr.textContent = 'Failed to load schedule. ' + e.message;
-      console.error(e);
-    }
-  }
-  load();
 })();
