@@ -2,134 +2,140 @@
 document.addEventListener('DOMContentLoaded', () => {
   const API = 'https://api.angelopab.com/schedule';
 
-  // ---- locale & preferences ----
-  const navLang = (navigator.language || 'en-US').toLowerCase();
+  // locale / region
+  const lang = (navigator.language || 'en-US').toLowerCase();
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-  const region = getRegionFromLocale(navLang);
-  const isUS = region === 'US';                       // 12h for US viewers
-  const isRO = navLang.startsWith('ro') || /Bucharest/i.test(tz);
+  const region = (lang.match(/[-_](\w{2})$/) || [,''])[1].toUpperCase();
+  const isUS = region === 'US';
+  const isRO = lang.startsWith('ro') || /Bucharest/i.test(tz);
+  const t = i18n(isRO ? 'ro' : 'en');
 
-  const t = makeI18n(isRO ? 'ro' : 'en');
-
-  // ---- build/find container ----
-  let root = document.querySelector('#schedule-widget, #ap-schedule');
+  // anchors
+  let root = document.querySelector('#ap-schedule, #schedule-widget');
   if (!root) {
-    root = document.createElement('div');
-    root.id = 'schedule-widget';
+    root = document.createElement('section');
+    root.id = 'ap-schedule';
     root.className = 'ap-schedule';
+    root.innerHTML = `<div class="ap-card">
+      <div class="ap-platforms" id="ap-platforms"></div>
+      <div id="ap-next" class="ap-next">${t.loading}</div>
+      <button id="ap-toggle" class="ap-btn" type="button" aria-expanded="false">${t.show}</button>
+      <ul id="ap-list" class="ap-list" hidden></ul>
+      <p class="ap-note">🌐 ${t.tzNote}</p>
+    </div>`;
     document.body.appendChild(root);
   }
+  const plats   = root.querySelector('#ap-platforms') || buildPlatforms(root, t);
+  const nextEl  = root.querySelector('#ap-next');
+  const listEl  = root.querySelector('#ap-list');
+  const toggle  = root.querySelector('#ap-toggle');
 
-  // inner markup (self-healing)
-  if (!root.querySelector('[data-next]')) {
-    root.innerHTML = `
-      <div class="ap-card">
-        <div class="ap-platforms" id="ap-platforms">
-          ${PLATFORMS_HTML()}
-        </div>
-        <div class="ap-next" data-next>${t.loading}</div>
-        <button type="button" class="ap-toggle btn-accent" data-toggle>${t.show}</button>
-        <ul class="ap-list" data-list hidden></ul>
-        <div class="ap-tz-note">🌐 ${t.tzNote}</div>
-      </div>
-    `;
+  // ensure platforms row exists & localized
+  function buildPlatforms(ctx, t) {
+    const el = ctx.querySelector('.ap-platforms') || document.createElement('div');
+    el.className = 'ap-platforms';
+    el.id = 'ap-platforms';
+    el.innerHTML = platformsHTML(t.prefix);
+    const header = ctx.querySelector('.ap-card');
+    header?.insertBefore(el, header.firstChild);
+    return el;
   }
 
-  const nextEl    = root.querySelector('[data-next]');
-  const listEl    = root.querySelector('[data-list]');
-  const toggleBtn = root.querySelector('[data-toggle]');
-  const plats     = root.querySelector('#ap-platforms');
+  // localize prefix if the HTML already existed
+  const prefix = plats.querySelector('.ap-prefix');
+  if (prefix) prefix.textContent = t.prefix;
 
-  // collapsed by default on mobile, expanded on desktop
+  // start collapsed on mobile
   const isMobile = window.matchMedia('(max-width: 560px)').matches;
-  let expanded = !isMobile;
-  listEl.hidden = !expanded;
-  plats.classList.toggle('ap-show', expanded);
-  toggleBtn.textContent = expanded ? t.hide : t.show;
-
-  toggleBtn.addEventListener('click', () => {
-    expanded = !expanded;
+  listEl.hidden = isMobile;
+  toggle.textContent = isMobile ? t.show : t.hide;
+  toggle.setAttribute('aria-expanded', String(!isMobile));
+  toggle.addEventListener('click', () => {
+    const expanded = listEl.hidden;
     listEl.hidden = !expanded;
-    plats.classList.toggle('ap-show', expanded);
-    toggleBtn.textContent = expanded ? t.hide : t.show;
+    toggle.textContent = expanded ? t.hide : t.show;
+    toggle.setAttribute('aria-expanded', String(expanded));
   });
 
-  // fetch & render
+  // fetch schedule
+  nextEl.textContent = t.loading;
   fetch(API, { cache: 'no-store' })
     .then(r => r.json())
     .then(({ next, items }) => {
       if (!next) {
         nextEl.textContent = t.none;
-        toggleBtn.disabled = true;
+        toggle.disabled = true;
         return;
       }
-
-      const nextDate = new Date(next.iso);
+      const n = new Date(next.iso);
       nextEl.innerHTML =
-        `${t.next}: <strong>${fmtLocal(nextDate, !isUS)}</strong>` +
-        ` — ${escapeHtml(next.game || next.title || 'TBA')}` +
-        ` <span class="ap-all">(all platforms)</span>` +
-        ` <span class="ap-countdown">(${countdown(nextDate, t)})</span>`;
+        `${t.next}: <strong>${fmt(n, !isUS)}</strong> — ${esc(next.game || next.title || 'TBA')}` +
+        ` <span class="ap-countdown">(${countdown(n, t)})</span>`;
 
       listEl.innerHTML = (items || []).map(ev => {
         const d = new Date(ev.iso);
         return `
           <li class="ap-item">
-            <span class="ap-item-date">${fmtLocal(d, !isUS)}</span>
+            <span class="ap-item-date">${fmt(d, !isUS)}</span>
             <span class="ap-countdown">(${countdown(d, t)})</span>
-            <span class="ap-item-title">— ${escapeHtml(ev.game || ev.title || 'TBA')}</span>
+            <span class="ap-item-title">— ${esc(ev.game || ev.title || 'TBA')}</span>
           </li>
         `;
       }).join('');
 
-      toggleBtn.disabled = (items || []).length === 0 && !expanded;
+      toggle.disabled = (items || []).length === 0 && listEl.hidden;
     })
-    .catch(err => {
-      console.error('[schedule-widget] error:', err);
+    .catch(() => {
       nextEl.textContent = t.error;
-      toggleBtn.disabled = true;
+      toggle.disabled = true;
     });
 
-  // ------- helpers -------
-  function fmtLocal(d, use24h) {
+  // helpers
+  function fmt(d, use24h) {
     return d.toLocaleString(undefined, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: !use24h
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: !use24h
     });
   }
-
   function countdown(date, t) {
     const now = new Date();
-    let diff = Math.max(0, date - now);
-    const mins = Math.floor(diff / 60000);
-    const hrs  = Math.floor(mins / 60);
-    const days = Math.floor(hrs / 24);
+    let mins = Math.floor(Math.max(0, (date - now)) / 60000);
+    const hrs = Math.floor(mins / 60); mins %= 60;
+    const days = Math.floor(hrs / 24); const rh = hrs % 24;
 
     if (days >= 1)   return t.inDays(days);
     if (hrs >= 1)    return t.inHours(hrs);
     if (mins >= 1)   return t.inMins(mins);
     return t.soon;
   }
+  function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));}
 
-  function getRegionFromLocale(locale) {
-    // ex: en-US, en_US, ro-RO, ro
-    const m = locale.match(/[-_](\w{2})$/);
-    return m ? m[1].toUpperCase() : '';
+  function platformsHTML(prefixText) {
+    // Correct paths to your icons
+    return `
+      <span class="ap-prefix">${esc(prefixText)}</span>
+      <a class="ap-chip" href="https://www.twitch.tv/AngeloPab" target="_blank" rel="noopener">
+        <img src="assets/img/twitch.png" alt="" loading="lazy"> Twitch
+      </a>
+      <span class="ap-sep">·</span>
+      <a class="ap-chip" href="https://www.youtube.com/@angelopabtv" target="_blank" rel="noopener">
+        <img src="assets/img/youtube.png" alt="" loading="lazy"> YouTube
+      </a>
+      <span class="ap-sep">·</span>
+      <a class="ap-chip" href="https://kick.com/AngeloPab" target="_blank" rel="noopener">
+        <img src="assets/img/kick.png" alt="" loading="lazy"> Kick
+      </a>
+      <span class="ap-sep">·</span>
+      <a class="ap-chip" href="https://www.tiktok.com/@angelopabtv" target="_blank" rel="noopener">
+        <img src="assets/img/tiktok.png" alt="" loading="lazy"> TikTok
+      </a>
+    `;
   }
 
-  function escapeHtml(s) {
-    return String(s || '').replace(/[&<>"']/g, m => (
-      { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]
-    ));
-  }
-
-  function makeI18n(lang) {
+  function i18n(lang) {
     if (lang === 'ro') {
       return {
+        prefix: 'Sunt LIVE și pe:',
         loading: 'Se încarcă următorul stream…',
         show: 'Arată următoarele streamuri',
         hide: 'Ascunde următoarele streamuri',
@@ -143,8 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
         inMins: n => `în ${n} ${n===1?'minut':'minute'}`
       };
     }
-    // default English
     return {
+      prefix: 'Also live on:',
       loading: 'Loading next stream…',
       show: 'Show next streams',
       hide: 'Hide next streams',
@@ -157,19 +163,5 @@ document.addEventListener('DOMContentLoaded', () => {
       inHours: n => `in ${n} hour${n===1?'':'s'}`,
       inMins: n => `in ${n} minute${n===1?'':'s'}`
     };
-  }
-
-  function PLATFORMS_HTML() {
-    // adjust paths if your icons are elsewhere
-    const chip = (img, label, href) =>
-      `<span class="ap-chip"><img src="${img}" alt="" loading="lazy">` +
-      (href ? `<a href="${href}" target="_blank" rel="noopener">${label}</a>` : label) +
-      `</span>`;
-    return [
-      chip('./twitch.png','Twitch','https://twitch.tv/AngeloPab'),
-      chip('./youtube.png','YouTube','https://youtube.com/@AngeloPab'),
-      chip('./kick.png','Kick','https://kick.com/AngeloPab'),
-      chip('./tiktok.png','TikTok','https://tiktok.com/@AngeloPab')
-    ].join('<span>·</span>');
   }
 });
