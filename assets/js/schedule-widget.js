@@ -1,8 +1,4 @@
-// assets/js/schedule-widget.js
-// - One-row platforms
-// - No duplicate first stream
-// - Countdown moved to RIGHT on expanded rows
-// - RO month: remove trailing dot; capitalize month; capitalize weekday
+// assets/js/schedule-widget.js — robust fetch + graceful fallback UI
 
 (function () {
   const root = document.getElementById("ap-schedule");
@@ -15,8 +11,105 @@
   const platBar = root.querySelector("#ap-platforms");
   const errEl = root.querySelector("#ap-error");
 
+  // Fallback phrases shown before we have server phrases
+  const isRO = (navigator.language || "").toLowerCase().startsWith("ro");
+  const FALLBACK = isRO ? {
+    headline: "Următorul live",
+    alsoLive: "Sunt LIVE și pe",
+    btnShow: "Arată următoarele live-uri",
+    btnHide: "Ascunde lista",
+    tzNote: "🌐 Orele sunt afișate în fusul tău orar",
+  } : {
+    headline: "Next stream",
+    alsoLive: "Also live on",
+    btnShow: "Show next streams",
+    btnHide: "Hide list",
+    tzNote: "🌐 Times are shown in your local timezone",
+  };
+
+  // Render platform row immediately (fallback text)
+  renderPlatforms(FALLBACK.alsoLive);
+  noteEl.textContent = FALLBACK.tzNote;
+  btnEl.textContent = FALLBACK.btnShow;
+
+  fetch("https://api.angelopab.com/schedule-json")
+    .then(async r => {
+      if (!r.ok) {
+        const txt = await r.text().catch(() => "");
+        throw new Error(`HTTP ${r.status} ${txt}`);
+      }
+      return r.json();
+    })
+    .then(data => {
+      // Replace phrases with server-provided ones
+      if (data && data.phrases) {
+        platBar.innerHTML = "";
+        renderPlatforms(data.phrases.alsoLive);
+        noteEl.textContent = data.phrases.tzNote;
+        btnEl.textContent = data.phrases.btnShow;
+      }
+
+      // NEXT line
+      if (data.next) {
+        const label = data.next.game || data.next.title || "";
+        const niceDate = prettifyRoDate(data.next.dateText);
+        nextEl.innerHTML =
+          `<strong>${escapeHtml((data.phrases?.headline) || FALLBACK.headline)}:</strong> ` +
+          `<span class="ap-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(data.next.timeText)}</span>` +
+          (label ? `<div class="ap-game">— ${escapeHtml(label)}</div>` : "") +
+          `<div class="ap-in">${escapeHtml(data.next.inText)}</div>`;
+      } else {
+        nextEl.textContent = isRO ? "Nu există următorul live." : "No upcoming streams.";
+      }
+
+      // Expanded list: next 3, no duplicate
+      listEl.innerHTML = "";
+      const more = (data.items || []).slice(1, 4);
+      more.forEach((it) => {
+        const label = it.game || it.title || "";
+        const niceDate = prettifyRoDate(it.dateText);
+        const li = document.createElement("li");
+        li.className = "ap-li";
+        li.innerHTML =
+          `<div class="ap-li-row">` +
+            `<div class="ap-li-left">` +
+              `<span class="ap-li-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(it.timeText)}</span>` +
+              (label ? `<span class="ap-li-title"> — ${escapeHtml(label)}</span>` : "") +
+            `</div>` +
+            `<span class="ap-li-in">${escapeHtml(it.inText)}</span>` +
+          `</div>`;
+        listEl.appendChild(li);
+      });
+
+      // Toggle
+      btnEl.setAttribute("aria-expanded", "false");
+      btnEl.onclick = () => {
+        const isHidden = listEl.hasAttribute("hidden");
+        if (isHidden) {
+          listEl.removeAttribute("hidden");
+          btnEl.textContent = (data.phrases?.btnHide) || FALLBACK.btnHide;
+          btnEl.setAttribute("aria-expanded", "true");
+        } else {
+          listEl.setAttribute("hidden", "");
+          btnEl.textContent = (data.phrases?.btnShow) || FALLBACK.btnShow;
+          btnEl.setAttribute("aria-expanded", "false");
+        }
+      };
+
+      // Show server-side error text (if any), but don't crash
+      if (data.error) {
+        errEl.removeAttribute("hidden");
+        errEl.textContent = (isRO ? "A apărut o problemă la încărcarea programului: " : "Schedule load issue: ") + data.error;
+      }
+    })
+    .catch(err => {
+      errEl.removeAttribute("hidden");
+      errEl.textContent = isRO ? "Nu s-a putut încărca programul." : "Failed to load schedule.";
+      console.error(err);
+    });
+
+  // ---- helpers ----
   function renderPlatforms(prefixText) {
-    platBar.innerHTML = "";
     const prefix = document.createElement("span");
     prefix.className = "ap-prefix";
     prefix.textContent = prefixText + ":";
@@ -26,14 +119,12 @@
     row.className = "ap-plat-row";
     platBar.appendChild(row);
 
-    const platforms = [
+    [
       { name: "Twitch",  url: "https://www.twitch.tv/AngeloPab",      img: "twitch.png"  },
       { name: "YouTube", url: "https://www.youtube.com/@angelopabtv", img: "youtube.png" },
       { name: "Kick",    url: "https://kick.com/AngeloPab",           img: "kick.png"    },
       { name: "TikTok",  url: "https://www.tiktok.com/@angelopabtv",  img: "tiktok.png"  },
-    ];
-
-    platforms.forEach((p) => {
+    ].forEach((p) => {
       const a = document.createElement("a");
       a.className = "ap-chip";
       a.href = p.url; a.target = "_blank"; a.rel = "noopener";
@@ -48,71 +139,9 @@
     });
   }
 
-  fetch("https://api.angelopab.com/schedule-json")
-    .then(r => r.json())
-    .then(data => {
-      renderPlatforms(data.phrases.alsoLive);
-      noteEl.textContent = data.phrases.tzNote;
-
-      // NEXT line (weekday capitalized, month without dot + capitalized; countdown last line)
-      if (data.next) {
-        const label = data.next.game || data.next.title || "";
-        const niceDate = prettifyRoDate(data.next.dateText);
-        nextEl.innerHTML =
-          `<strong>${escapeHtml(data.phrases.headline)}:</strong> ` +
-          `<span class="ap-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(data.next.timeText)}</span>` +
-          (label ? `<div class="ap-game">— ${escapeHtml(label)}</div>` : "") +
-          `<div class="ap-in">${escapeHtml(data.next.inText)}</div>`;
-      } else {
-        nextEl.textContent = "—";
-      }
-
-      // Expanded list: show exactly next 3 (no duplication of the first)
-      listEl.innerHTML = "";
-      const more = (data.items || []).slice(1, 4);
-      more.forEach((it) => {
-        const label = it.game || it.title || "";
-        const niceDate = prettifyRoDate(it.dateText);
-        const li = document.createElement("li");
-        li.className = "ap-li";
-        li.innerHTML =
-          `<div class="ap-li-row">` +
-            `<div class="ap-li-left">` +
-              `<span class="ap-li-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(it.timeText)}</span>` +
-              (label ? `<span class="ap-li-title"> — ${escapeHtml(label)}</span>` : "") +
-            `</div>` +
-            `<span class="ap-li-in">${escapeHtml(it.inText)}</span>` + // ➜ RIGHT SIDE
-          `</div>`;
-        listEl.appendChild(li);
-      });
-
-      // Button behavior
-      btnEl.textContent = data.phrases.btnShow;
-      btnEl.setAttribute("aria-expanded", "false");
-      btnEl.addEventListener("click", () => {
-        const isHidden = listEl.hasAttribute("hidden");
-        if (isHidden) {
-          listEl.removeAttribute("hidden");
-          btnEl.textContent = data.phrases.btnHide;
-          btnEl.setAttribute("aria-expanded", "true");
-        } else {
-          listEl.setAttribute("hidden", "");
-          btnEl.textContent = data.phrases.btnShow;
-          btnEl.setAttribute("aria-expanded", "false");
-        }
-      });
-    })
-    .catch(err => {
-      errEl.removeAttribute("hidden");
-      errEl.textContent = "Failed to load schedule.";
-      console.error(err);
-    });
-
-  // ---- helpers ----
   function prettifyRoDate(s) {
-    // 1) Remove trailing dot before comma on month: "nov.," -> "nov,"
+    // remove trailing dot on months and capitalize month short name
     let out = String(s || "").replace(/([A-Za-zĂÂÎȘȚăâîșț]+)\.\s*,/g, "$1,");
-    // 2) Capitalize month (ro short names)
     const roMonths = {
       "ian": "Ian", "feb": "Feb", "mar": "Mar", "apr": "Apr", "mai": "Mai",
       "iun": "Iun", "iul": "Iul", "aug": "Aug", "sept": "Sept",
@@ -122,7 +151,6 @@
       (m) => roMonths[m.toLowerCase()] || m);
     return out;
   }
-
   function escapeHtml(s) {
     return String(s ?? "")
       .replace(/&/g, "&amp;").replace(/</g, "&lt;")
