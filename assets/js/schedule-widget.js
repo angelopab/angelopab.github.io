@@ -1,5 +1,9 @@
 // assets/js/schedule-widget.js
-// Renders the schedule card using https://api.angelopab.com/schedule-json
+// - One-row platforms
+// - No duplicate first stream
+// - Countdown moved to end
+// - RO month: remove trailing dot; capitalize weekday
+
 (function () {
   const root = document.getElementById("ap-schedule");
   if (!root) return;
@@ -11,13 +15,16 @@
   const platBar = root.querySelector("#ap-platforms");
   const errEl = root.querySelector("#ap-error");
 
-  // Always show icons + text
   function renderPlatforms(prefixText) {
     platBar.innerHTML = "";
     const prefix = document.createElement("span");
     prefix.className = "ap-prefix";
     prefix.textContent = prefixText + ":";
     platBar.appendChild(prefix);
+
+    const row = document.createElement("div");
+    row.className = "ap-plat-row";
+    platBar.appendChild(row);
 
     const platforms = [
       { name: "Twitch",  url: "https://www.twitch.tv/AngeloPab",      img: "twitch.png"  },
@@ -26,12 +33,7 @@
       { name: "TikTok",  url: "https://www.tiktok.com/@angelopabtv",  img: "tiktok.png"  },
     ];
 
-    platforms.forEach((p, i) => {
-      const sep = document.createElement("span");
-      sep.className = "ap-sep";
-      sep.textContent = i === 0 ? " " : " · ";
-      platBar.appendChild(sep);
-
+    platforms.forEach((p) => {
       const a = document.createElement("a");
       a.className = "ap-chip";
       a.href = p.url; a.target = "_blank"; a.rel = "noopener";
@@ -42,7 +44,7 @@
 
       a.appendChild(img);
       a.append(p.name);
-      platBar.appendChild(a);
+      row.appendChild(a);
     });
   }
 
@@ -52,31 +54,33 @@
       renderPlatforms(data.phrases.alsoLive);
       noteEl.textContent = data.phrases.tzNote;
 
-      // NEXT line (show game; fallback to title)
+      // NEXT line (weekday capitalized, month w/o dot; countdown last)
       if (data.next) {
         const label = data.next.game || data.next.title || "";
+        const niceDate = prettifyDate(data.next.dateText);
         nextEl.innerHTML =
           `<strong>${escapeHtml(data.phrases.headline)}:</strong> ` +
-          `<span class="ap-when">${escapeHtml(capitalizeFirst(data.next.dateText))}, ${escapeHtml(data.next.timeText)}</span> ` +
-          `<span class="ap-in">${escapeHtml(data.next.inText)}</span> ` +
-          (label ? `<div class="ap-game">— ${escapeHtml(label)}</div>` : "");
+          `<span class="ap-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(data.next.timeText)}</span> ` +
+          (label ? `<div class="ap-game">— ${escapeHtml(label)}</div>` : "") +
+          ` <span class="ap-in">${escapeHtml(data.next.inText)}</span>`;
       } else {
         nextEl.textContent = "—";
       }
 
-      // Expanded list (do NOT duplicate first; show next 3 items)
+      // Expanded list: show exactly next 3 (no duplication)
       listEl.innerHTML = "";
-      const more = (data.items || []).slice(1, 4); // exactly 3 after the first
+      const more = (data.items || []).slice(1, 4);
       more.forEach((it) => {
         const label = it.game || it.title || "";
+        const niceDate = prettifyDate(it.dateText);
         const li = document.createElement("li");
         li.className = "ap-li";
         li.innerHTML =
           `<div class="ap-li-row">` +
-          `<span class="ap-li-when">${escapeHtml(capitalizeFirst(it.dateText))}, ${escapeHtml(it.timeText)}</span>` +
-          `<span class="ap-li-in">${escapeHtml(it.inText)}</span>` +
-          `</div>` +
-          (label ? `<div class="ap-li-title">— ${escapeHtml(label)}</div>` : "");
+            `<span class="ap-li-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(it.timeText)}</span>` +
+            (label ? `<span class="ap-li-title"> — ${escapeHtml(label)}</span>` : "") +
+            ` <span class="ap-li-in">${escapeHtml(it.inText)}</span>` +
+          `</div>`;
         listEl.appendChild(li);
       });
 
@@ -102,6 +106,10 @@
       console.error(err);
     });
 
+  function prettifyDate(s) {
+    // remove dot before comma in month abbreviations: "nov.," -> "nov,"
+    return String(s || "").replace(/([A-Za-zăâîșț]+)\.,/gi, "$1,");
+  }
   function escapeHtml(s) {
     return String(s ?? "")
       .replace(/&/g, "&amp;").replace(/</g, "&lt;")
