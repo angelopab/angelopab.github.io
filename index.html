@@ -59,33 +59,13 @@
 
     
 <!-- START: AP SCHEDULE WIDGET -->
-<link rel="stylesheet" href="assets/css/schedule-widget.css?v=1.0.0">
+<link rel="stylesheet" href="assets/css/schedule-widget.css?v=1.1.2">
 
 <div class="section-title">• STREAM SCHEDULE •</div>
 <section class="ap-schedule" id="ap-schedule" aria-live="polite">
   <div class="ap-card">
-    <div class="ap-platforms" id="ap-platforms">
-      <!-- JS will render: 'Also live on:' + icons + text (Twitch/YouTube/Kick/TikTok) -->
-      <span class="ap-prefix">Also live on:</span>
-      <span class="ap-sep"> </span>
-      <a class="ap-chip" href="https://www.twitch.tv/AngeloPab" target="_blank" rel="noopener">
-        <img src="https://api.angelopab.com/img/twitch.png?w=20&h=20" alt=""> Twitch
-      </a>
-      <span class="ap-sep">·</span>
-      <a class="ap-chip" href="https://www.youtube.com/@angelopabtv" target="_blank" rel="noopener">
-        <img src="https://api.angelopab.com/img/youtube.png?w=20&h=20" alt=""> YouTube
-      </a>
-      <span class="ap-sep">·</span>
-      <a class="ap-chip" href="https://kick.com/AngeloPab" target="_blank" rel="noopener">
-        <img src="https://api.angelopab.com/img/kick.png?w=20&h=20" alt=""> Kick
-      </a>
-      <span class="ap-sep">·</span>
-      <a class="ap-chip" href="https://www.tiktok.com/@angelopabtv" target="_blank" rel="noopener">
-        <img src="https://api.angelopab.com/img/tiktok.png?w=20&h=20" alt=""> TikTok
-      </a>
-    </div>
-
-    <div id="ap-next" class="ap-next">Loading next stream…</div>
+    <div class="ap-platforms" id="ap-platforms"></div> <!-- empty: JS will render -->
+    <div id="ap-next" class="ap-next">Loading next stream...</div>
     <button id="ap-toggle" class="ap-btn" type="button" aria-expanded="false">Show next streams</button>
     <ul id="ap-list" class="ap-list" hidden></ul>
     <p class="ap-note">🌐 Times are shown in your local timezone</p>
@@ -93,8 +73,9 @@
   </div>
 </section>
 
-<script src="assets/js/schedule-widget.js?v=1.0.0" defer></script>
+<script src="assets/js/schedule-widget.js?v=1.1.2" defer></script>
 <!-- END: AP SCHEDULE WIDGET -->
+
 
 
 <div class="email">📬 Contact: <a href="mailto:contact@angelopab.com">contact@angelopab.com</a></div>

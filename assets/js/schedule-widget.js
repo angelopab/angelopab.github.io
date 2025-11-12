@@ -1,5 +1,4 @@
-// assets/js/schedule-widget.js — robust fetch + graceful fallback UI
-
+// assets/js/schedule-widget.js
 (function () {
   const root = document.getElementById("ap-schedule");
   if (!root) return;
@@ -27,21 +26,19 @@
     tzNote: "🌐 Times are shown in your local timezone",
   };
 
-  // Render platform row immediately (fallback text)
+  // Render platform row immediately (fallback text) — ensure container is empty first
+  platBar.innerHTML = "";
   renderPlatforms(FALLBACK.alsoLive);
   noteEl.textContent = FALLBACK.tzNote;
   btnEl.textContent = FALLBACK.btnShow;
 
   fetch("https://api.angelopab.com/schedule-json")
     .then(async r => {
-      if (!r.ok) {
-        const txt = await r.text().catch(() => "");
-        throw new Error(`HTTP ${r.status} ${txt}`);
-      }
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       return r.json();
     })
     .then(data => {
-      // Replace phrases with server-provided ones
+      // Re-render platforms with server phrases (clear first to avoid duplication)
       if (data && data.phrases) {
         platBar.innerHTML = "";
         renderPlatforms(data.phrases.alsoLive);
@@ -54,7 +51,7 @@
         const label = data.next.game || data.next.title || "";
         const niceDate = prettifyRoDate(data.next.dateText);
         nextEl.innerHTML =
-          `<strong>${escapeHtml((data.phrases?.headline) || FALLBACK.headline)}:</strong> ` +
+          `<strong>${escapeHtml((data.phrases?.headline)||FALLBACK.headline)}:</strong> ` +
           `<span class="ap-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(data.next.timeText)}</span>` +
           (label ? `<div class="ap-game">— ${escapeHtml(label)}</div>` : "") +
           `<div class="ap-in">${escapeHtml(data.next.inText)}</div>`;
@@ -96,16 +93,14 @@
         }
       };
 
-      // Show server-side error text (if any), but don't crash
       if (data.error) {
         errEl.removeAttribute("hidden");
-        errEl.textContent = (isRO ? "A apărut o problemă la încărcarea programului: " : "Schedule load issue: ") + data.error;
+        errEl.textContent = (isRO ? "A apărut o problemă: " : "Schedule load issue: ") + data.error;
       }
     })
-    .catch(err => {
+    .catch(() => {
       errEl.removeAttribute("hidden");
       errEl.textContent = isRO ? "Nu s-a putut încărca programul." : "Failed to load schedule.";
-      console.error(err);
     });
 
   // ---- helpers ----
@@ -140,7 +135,6 @@
   }
 
   function prettifyRoDate(s) {
-    // remove trailing dot on months and capitalize month short name
     let out = String(s || "").replace(/([A-Za-zĂÂÎȘȚăâîșț]+)\.\s*,/g, "$1,");
     const roMonths = {
       "ian": "Ian", "feb": "Feb", "mar": "Mar", "apr": "Apr", "mai": "Mai",
