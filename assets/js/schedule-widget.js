@@ -52,8 +52,8 @@
         const niceDate = prettifyRoDate(data.next.dateText);
         nextEl.innerHTML =
           `<strong>${escapeHtml((data.phrases?.headline)||FALLBACK.headline)}:</strong> ` +
-          `<span class="ap-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(data.next.timeText)}</span>` +
-          (label ? `<div class="ap-game">— ${escapeHtml(label)}</div>` : "") +
+          `<span class="ap-when">${escapeHtml(capitalizeFirst(niceDate))} ${escapeHtml(data.next.timeText)}</span>` +
+          (label ? `<div class="ap-game"> ${escapeHtml(label)}</div>` : "") +
           `<div class="ap-in">${escapeHtml(data.next.inText)}</div>`;
       } else {
         nextEl.textContent = isRO ? "Nu există următorul live." : "No upcoming streams.";
@@ -70,7 +70,7 @@
         li.innerHTML =
           `<div class="ap-li-row">` +
             `<div class="ap-li-left">` +
-              `<span class="ap-li-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(it.timeText)}</span>` +
+              `<span class="ap-li-when">${escapeHtml(capitalizeFirst(niceDate))} ${escapeHtml(it.timeText)}</span>` +
               (label ? `<span class="ap-li-title"> — ${escapeHtml(label)}</span>` : "") +
             `</div>` +
             `<span class="ap-li-in">${escapeHtml(it.inText)}</span>` +
