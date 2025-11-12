@@ -23,7 +23,7 @@
   inset: -6px;
   border-radius: 50%;
   background: radial-gradient(transparent 78%, rgba(0, 0, 0, 0.4) 79%),
-              conic-gradient(#3a3a3a, #3a3a3a);
+    conic-gradient(#3a3a3a, #3a3a3a);
   z-index: -1;
   filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
 }
@@ -31,12 +31,14 @@
 /* Animated ring (live) */
 .live-avatar[data-live="on"]::before {
   background: radial-gradient(transparent 78%, rgba(0, 0, 0, 0.4) 79%),
-              conic-gradient(#ff2d55, #ff7a00, #ff2d55);
+    conic-gradient(#ff2d55, #ff7a00, #ff2d55);
   animation: live-spin 2.5s linear infinite;
 }
 
 @keyframes live-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Pill */

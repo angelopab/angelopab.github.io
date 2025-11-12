@@ -5,7 +5,7 @@
 
   const nextEl = root.querySelector("#ap-next");
   const listEl = root.querySelector("#ap-list");
-  const btnEl  = root.querySelector("#ap-toggle");
+  const btnEl = root.querySelector("#ap-toggle");
   const noteEl = root.querySelector(".ap-note");
   const platBar = root.querySelector("#ap-platforms");
   const errEl = root.querySelector("#ap-error");
@@ -51,7 +51,7 @@
         const label = data.next.game || data.next.title || "";
         const niceDate = prettifyRoDate(data.next.dateText);
         nextEl.innerHTML =
-          `<strong>${escapeHtml((data.phrases?.headline)||FALLBACK.headline)}:</strong> ` +
+          `<strong>${escapeHtml((data.phrases?.headline) || FALLBACK.headline)}:</strong> ` +
           `<span class="ap-when">${escapeHtml(capitalizeFirst(niceDate))} ${escapeHtml(data.next.timeText)}</span>` +
           (label ? `<div class="ap-game"> ${escapeHtml(label)}</div>` : "") +
           `<div class="ap-in">${escapeHtml(data.next.inText)}</div>`;
@@ -69,11 +69,11 @@
         li.className = "ap-li";
         li.innerHTML =
           `<div class="ap-li-row">` +
-            `<div class="ap-li-left">` +
-              `<span class="ap-li-when">${escapeHtml(capitalizeFirst(niceDate))} ${escapeHtml(it.timeText)}</span>` +
-              (label ? `<span class="ap-li-title"> — ${escapeHtml(label)}</span>` : "") +
-            `</div>` +
-            `<span class="ap-li-in">${escapeHtml(it.inText)}</span>` +
+          `<div class="ap-li-left">` +
+          `<span class="ap-li-when">${escapeHtml(capitalizeFirst(niceDate))} ${escapeHtml(it.timeText)}</span>` +
+          (label ? `<span class="ap-li-title"> — ${escapeHtml(label)}</span>` : "") +
+          `</div>` +
+          `<span class="ap-li-in">${escapeHtml(it.inText)}</span>` +
           `</div>`;
         listEl.appendChild(li);
       });
@@ -115,10 +115,10 @@
     platBar.appendChild(row);
 
     [
-      { name: "Twitch",  url: "https://www.twitch.tv/AngeloPab",      img: "twitch.png"  },
+      { name: "Twitch", url: "https://www.twitch.tv/AngeloPab", img: "twitch.png" },
       { name: "YouTube", url: "https://www.youtube.com/@angelopabtv", img: "youtube.png" },
-      { name: "Kick",    url: "https://kick.com/AngeloPab",           img: "kick.png"    },
-      { name: "TikTok",  url: "https://www.tiktok.com/@angelopabtv",  img: "tiktok.png"  },
+      { name: "Kick", url: "https://kick.com/AngeloPab", img: "kick.png" },
+      { name: "TikTok", url: "https://www.tiktok.com/@angelopabtv", img: "tiktok.png" },
     ].forEach((p) => {
       const a = document.createElement("a");
       a.className = "ap-chip";
