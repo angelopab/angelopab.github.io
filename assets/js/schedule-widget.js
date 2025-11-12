@@ -1,8 +1,4 @@
-/* AngeloPab – Weekly schedule (simple + "4 Mondays" fallback)
-   - Reads ICS from your Worker
-   - If only 1 BYDAY across all events => show next 4 occurrences (4 weeks)
-   - If 2–7 BYDAYs => show all days occurring in the next 7 days (one per weekday)
-*/
+/* AngeloPab – Weekly schedule (robust + "4 Mondays" fallback) */
 
 (function () {
   const ICS_URL = 'https://api.angelopab.com/twitch-ics';
@@ -10,101 +6,105 @@
   const panel = document.querySelector('#ap-schedule');
   if (!panel) return;
 
-  const nextEl   = panel.querySelector('[data-next]');
-  const listWrap = panel.querySelector('[data-list]');
+  const nextEl    = panel.querySelector('[data-next]');
+  const listWrap  = panel.querySelector('[data-list]');
   const toggleBtn = panel.querySelector('[data-toggle]');
 
   let expanded = false;
-  toggleBtn?.addEventListener('click', () => {
-    expanded = !expanded;
-    listWrap.hidden = !expanded;
-    toggleBtn.textContent = expanded ? 'Hide next streams' : 'Show next streams';
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      expanded = !expanded;
+      listWrap.hidden = !expanded;
+      toggleBtn.textContent = expanded ? 'Hide next streams' : 'Show next streams';
+    });
+  }
+
+  init().catch(err => {
+    console.error('[schedule-widget] fatal:', err);
+    safeText(nextEl, 'Unable to load schedule.');
+    if (toggleBtn) toggleBtn.disabled = true;
   });
 
-  fetch(ICS_URL, { cache: 'no-store' })
-    .then(r => r.text())
-    .then(text => {
-      const evs = parseWeeklyEvents(text); // {tz, hour, minute, second, bydays[], title, game}
-      if (!evs.length) {
-        nextEl.textContent = 'No upcoming streams found.';
-        toggleBtn.disabled = true;
-        return;
-      }
+  async function init() {
+    const res = await fetch(ICS_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('ICS fetch ' + res.status);
+    const text = await res.text();
+    const events = parseWeeklyEvents(text); // {tz, hour, minute, second, bydays[], title, game}
 
-      const result = computeUpcoming(evs);
+    if (!events.length) {
+      safeText(nextEl, 'No upcoming streams found.');
+      if (toggleBtn) toggleBtn.disabled = true;
+      return;
+    }
 
-      if (!result.length) {
-        nextEl.textContent = 'No upcoming streams found.';
-        toggleBtn.disabled = true;
-        return;
-      }
+    const upcoming = computeUpcoming(events);
 
-      // Show the very next one
-      const first = result[0];
-      nextEl.innerHTML = `Next stream: <strong>${fmtDate(first.date)}</strong> — ${escapeHtml(first.game || first.title || 'TBA')} <span class="ap-all">(all platforms)</span>`;
+    if (!upcoming.length) {
+      safeText(nextEl, 'No upcoming streams found.');
+      if (toggleBtn) toggleBtn.disabled = true;
+      return;
+    }
 
-      // Show the rest
-      listWrap.innerHTML = result.slice(1).map(ev => `
-        <li class="ap-item">
-          <span class="ap-item-date">${fmtDate(ev.date)}</span>
-          <span class="ap-item-title">— ${escapeHtml(ev.game || ev.title || 'TBA')}</span>
-        </li>
-      `).join('');
+    // next stream
+    const first = upcoming[0];
+    nextEl.innerHTML =
+      `Next stream: <strong>${fmtDate(first.date)}</strong> — ${escapeHtml(first.game || first.title || 'TBA')} <span class="ap-all">(all platforms)</span>`;
 
-      toggleBtn.disabled = result.length <= 1;
-    })
-    .catch(() => {
-      nextEl.textContent = 'Unable to load schedule.';
-      toggleBtn.disabled = true;
-    });
+    // rest
+    listWrap.innerHTML = upcoming.slice(1).map(ev => `
+      <li class="ap-item">
+        <span class="ap-item-date">${fmtDate(ev.date)}</span>
+        <span class="ap-item-title">— ${escapeHtml(ev.game || ev.title || 'TBA')}</span>
+      </li>
+    `).join('');
 
-  // ---------- core logic ----------
+    if (toggleBtn) toggleBtn.disabled = upcoming.length <= 1;
+  }
+
+  // ============== logic ==============
+
   function computeUpcoming(events) {
     const now = new Date();
 
-    // Gather all distinct weekdays across events
+    // collect unique weekdays
     const weekdaySet = new Set();
     for (const ev of events) (ev.bydays || []).forEach(d => weekdaySet.add(d));
     const uniqueWeekdays = [...weekdaySet];
 
-    // If only ONE weekday total -> show NEXT 4 occurrences of that weekday
+    // if only one weekday -> show next 4
     if (uniqueWeekdays.length === 1) {
       const wd = uniqueWeekdays[0];
+      const src = events.find(e => e.bydays.includes(wd));
+      const hh = src?.hour ?? 0, mm = src?.minute ?? 0, ss = src?.second ?? 0, tz = src?.tz || 'UTC';
+      const title = src?.title, game = src?.game;
 
-      // Pick the first event that defines time & tz for that weekday
-      const source = events.find(e => e.bydays.includes(wd));
-      const hh = source.hour, mm = source.minute || 0, ss = source.second || 0, tz = source.tz || 'UTC';
-      const title = source.title, game = source.game;
-
-      // First next date (>= now)
       let cursor = nextWeekdayAtTime(now, wd, hh, mm, ss, tz);
       const out = [];
       for (let i = 0; i < 4; i++) {
         out.push({ date: cursor, title, game });
-        cursor = new Date(cursor.getTime() + 7 * 864e5); // +1 week
+        cursor = new Date(cursor.getTime() + 7 * 864e5);
       }
       return out;
     }
 
-    // Otherwise: generate the next occurrence for EACH weekday within the next 7 days
+    // else: show all scheduled days within next 7 days (one per weekday)
     const windowEnd = new Date(now.getTime() + 7 * 864e5);
     const out = [];
-
     for (const ev of events) {
-      const { hour, minute = 0, second = 0, tz = 'UTC', title, game } = ev;
+      const hh = ev?.hour ?? 0, mm = ev?.minute ?? 0, ss = ev?.second ?? 0, tz = ev?.tz || 'UTC';
       for (const wd of ev.bydays || []) {
-        const next = nextWeekdayAtTime(now, wd, hour, minute, second, tz);
+        const next = nextWeekdayAtTime(now, wd, hh, mm, ss, tz);
         if (next >= now && next <= windowEnd) {
-          out.push({ date: next, title, game });
+          out.push({ date: next, title: ev.title, game: ev.game });
         }
       }
     }
-
     out.sort((a, b) => a.date - b.date);
     return out;
   }
 
-  // ---------- ICS parsing (weekly only) ----------
+  // ============== ICS parsing (weekly only) ==============
+
   function parseWeeklyEvents(text) {
     const lines = unfold(text).filter(Boolean);
     const out = [];
@@ -125,9 +125,11 @@
       if (!cur) continue;
 
       if (line.startsWith('DTSTART')) {
-        const { hh, mi, ss, tz } = parseDT(line);
-        cur.hour = hh; cur.minute = mi; cur.second = ss;
-        if (tz) calendarTZID = tz, cur.tz = tz;
+        const dt = parseDT(line);
+        if (dt) {
+          cur.hour = dt.hh; cur.minute = dt.mi; cur.second = dt.ss;
+          if (dt.tz) { cur.tz = dt.tz; calendarTZID = dt.tz; }
+        }
       } else if (line.startsWith('SUMMARY:')) {
         cur.title = line.slice(8);
       } else if (line.startsWith('CATEGORIES:')) {
@@ -151,27 +153,27 @@
   }
 
   function parseDT(line) {
-    // DTSTART;TZID=/Europe/Bucharest:20251107T210000  or  DTSTART:20251107T210000Z
-    const m = line.match(/^DTSTART(?:;TZID=([^:]+))?:(\d{8}T\d{6}Z?)/i);
-    if (!m) return {};
+    // Handle: DTSTART;TZID=/Europe/Bucharest:20251107T210000  or  DTSTART:20251107T210000Z
+    const m = line.match(/^DTSTART\s*(?:;TZID=([^:]+))?\s*:(\d{8}T\d{6}Z?)/i);
+    if (!m) return null;
     const tzRaw = m[1];
     const tz = tzRaw ? tzRaw.replace(/^\/+/, '') : null;
     const v = m[2];
-    const hh = +v.slice(9,11), mi = +v.slice(11,13), ss = +v.slice(13,15);
-    return { hh, mi, ss, tz };
+    return { hh:+v.slice(9,11), mi:+v.slice(11,13), ss:+v.slice(13,15), tz };
   }
 
   function parseRRule(s) {
     return s.split(';').reduce((acc, kv) => {
-      const [k, v] = kv.split('=');
-      acc[k.toUpperCase()] = v;
+      const i = kv.indexOf('=');
+      if (i > -1) acc[kv.slice(0,i).toUpperCase()] = kv.slice(i+1);
       return acc;
     }, {});
   }
 
   const BYDAY_TO_INDEX = { SU:0, MO:1, TU:2, WE:3, TH:4, FR:5, SA:6 };
 
-  // ---------- date helpers ----------
+  // ============== date helpers ==============
+
   function nextWeekdayAtTime(afterDate, weekday, hh, mm, ss, timeZone) {
     const d = new Date(afterDate.getTime());
     const todayWd = d.getDay();
@@ -186,7 +188,6 @@
   }
 
   function zonedCivilToDate(y, M, d, hh, mm, ss, timeZone) {
-    // Convert a civil time in `timeZone` to a real UTC Date
     const asUTC = Date.UTC(y, M-1, d, hh, mm, ss);
     const off = tzOffsetMs(new Date(asUTC), timeZone);
     return new Date(asUTC - off);
@@ -203,7 +204,8 @@
     return asIfUTC - date.getTime();
   }
 
-  // ---------- formatting ----------
+  // ============== view helpers ==============
+
   function fmtDate(date) {
     return date.toLocaleString(undefined, {
       weekday: 'short',
@@ -212,6 +214,11 @@
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  function safeText(el, s) {
+    if (!el) return;
+    el.textContent = s;
   }
 
   function escapeHtml(s) {
