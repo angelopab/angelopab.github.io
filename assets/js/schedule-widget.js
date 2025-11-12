@@ -1,6 +1,5 @@
 // assets/js/schedule-widget.js
 // Renders the schedule card using https://api.angelopab.com/schedule-json
-
 (function () {
   const root = document.getElementById("ap-schedule");
   if (!root) return;
@@ -21,10 +20,10 @@
     platBar.appendChild(prefix);
 
     const platforms = [
-      { name: "Twitch",  url: "https://www.twitch.tv/AngeloPab",  img: "twitch.png"  },
+      { name: "Twitch",  url: "https://www.twitch.tv/AngeloPab",      img: "twitch.png"  },
       { name: "YouTube", url: "https://www.youtube.com/@angelopabtv", img: "youtube.png" },
-      { name: "Kick",    url: "https://kick.com/AngeloPab",      img: "kick.png"    },
-      { name: "TikTok",  url: "https://www.tiktok.com/@angelopabtv", img: "tiktok.png"  },
+      { name: "Kick",    url: "https://kick.com/AngeloPab",           img: "kick.png"    },
+      { name: "TikTok",  url: "https://www.tiktok.com/@angelopabtv",  img: "tiktok.png"  },
     ];
 
     platforms.forEach((p, i) => {
@@ -35,13 +34,10 @@
 
       const a = document.createElement("a");
       a.className = "ap-chip";
-      a.href = p.url;
-      a.target = "_blank";
-      a.rel = "noopener";
+      a.href = p.url; a.target = "_blank"; a.rel = "noopener";
 
       const img = document.createElement("img");
-      img.loading = "lazy";
-      img.alt = "";
+      img.loading = "lazy"; img.alt = "";
       img.src = `https://api.angelopab.com/img/${p.img}?w=20&h=20`;
 
       a.appendChild(img);
@@ -56,28 +52,31 @@
       renderPlatforms(data.phrases.alsoLive);
       noteEl.textContent = data.phrases.tzNote;
 
-      // NEXT line
+      // NEXT line (show game; fallback to title)
       if (data.next) {
+        const label = data.next.game || data.next.title || "";
         nextEl.innerHTML =
           `<strong>${escapeHtml(data.phrases.headline)}:</strong> ` +
-          `<span class="ap-when">${escapeHtml(data.next.dateText)}, ${escapeHtml(data.next.timeText)}</span> ` +
+          `<span class="ap-when">${escapeHtml(capitalizeFirst(data.next.dateText))}, ${escapeHtml(data.next.timeText)}</span> ` +
           `<span class="ap-in">${escapeHtml(data.next.inText)}</span> ` +
-          `<div class="ap-game">— ${escapeHtml(data.next.title)}</div>`;
+          (label ? `<div class="ap-game">— ${escapeHtml(label)}</div>` : "");
       } else {
         nextEl.textContent = "—";
       }
 
-      // Full list (includes the first item; we’ll hide duplication visually)
+      // Expanded list (do NOT duplicate first; show next 3 items)
       listEl.innerHTML = "";
-      data.items.forEach((it, idx) => {
+      const more = (data.items || []).slice(1, 4); // exactly 3 after the first
+      more.forEach((it) => {
+        const label = it.game || it.title || "";
         const li = document.createElement("li");
-        li.className = "ap-li" + (idx === 0 ? " ap-li--first" : "");
+        li.className = "ap-li";
         li.innerHTML =
           `<div class="ap-li-row">` +
-          `<span class="ap-li-when">${escapeHtml(it.dateText)}, ${escapeHtml(it.timeText)}</span>` +
+          `<span class="ap-li-when">${escapeHtml(capitalizeFirst(it.dateText))}, ${escapeHtml(it.timeText)}</span>` +
           `<span class="ap-li-in">${escapeHtml(it.inText)}</span>` +
           `</div>` +
-          `<div class="ap-li-title">— ${escapeHtml(it.title)}</div>`;
+          (label ? `<div class="ap-li-title">— ${escapeHtml(label)}</div>` : "");
         listEl.appendChild(li);
       });
 
@@ -85,8 +84,8 @@
       btnEl.textContent = data.phrases.btnShow;
       btnEl.setAttribute("aria-expanded", "false");
       btnEl.addEventListener("click", () => {
-        const open = listEl.hasAttribute("hidden");
-        if (open) {
+        const isHidden = listEl.hasAttribute("hidden");
+        if (isHidden) {
           listEl.removeAttribute("hidden");
           btnEl.textContent = data.phrases.btnHide;
           btnEl.setAttribute("aria-expanded", "true");
@@ -108,5 +107,9 @@
       .replace(/&/g, "&amp;").replace(/</g, "&lt;")
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+  function capitalizeFirst(s) {
+    if (!s) return s;
+    return s.charAt(0).toUpperCase() + s.slice(1);
   }
 })();

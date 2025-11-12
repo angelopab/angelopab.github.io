@@ -1,12 +1,11 @@
 /* assets/css/schedule-widget.css */
-/* Dark, mobile-first, clean */
+/* Match main page (style.css): dark bg, white text, blue accent #2864d4 */
 
 :root {
-  --ap-bg: #0e0f10;
-  --ap-panel: #14171a;
-  --ap-accent: #7c5cff; /* purple accent */
-  --ap-text: #e8ecf1;
-  --ap-dim: #9aa4b2;
+  --ap-accent: #2864d4; /* main button/link color */
+  --ap-panel: #1a1a1a;  /* card bg slightly lighter than #111 */
+  --ap-text: #ffffff;
+  --ap-dim: #aaaaaa;
   --ap-border: rgba(255,255,255,0.08);
 }
 
@@ -60,19 +59,20 @@
   line-height: 1.5;
   margin: .2rem 0 .8rem;
 }
-#ap-next .ap-when { font-weight: 700; }
+#ap-next .ap-when { font-weight: 800; }
 #ap-next .ap-in { margin-left: .4rem; color: var(--ap-dim); }
-#ap-next .ap-game { opacity: .9; }
+#ap-next .ap-game { opacity: .95; }
 
-/* Button */
+/* Button — use site accent blue */
 #ap-toggle {
   display: inline-block; width: 100%;
   background: var(--ap-accent); color: #fff; border: 0;
   border-radius: 14px; padding: 12px 16px; cursor: pointer;
   font-weight: 800; letter-spacing: .2px;
   font-size: clamp(.95rem, .8vw + .6rem, 1.05rem);
+  transition: filter .2s ease;
 }
-#ap-toggle:hover { filter: brightness(1.05); }
+#ap-toggle:hover { filter: brightness(1.08); }
 
 /* List */
 #ap-list {
@@ -88,9 +88,9 @@
 #ap-list .ap-li-row {
   display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap;
 }
-#ap-list .ap-li-when { font-weight: 700; }
+#ap-list .ap-li-when { font-weight: 800; }
 #ap-list .ap-li-in { color: var(--ap-dim); }
-#ap-list .ap-li-title { opacity: .9; }
+#ap-list .ap-li-title { opacity: .95; }
 
 /* Note + error */
 .ap-note {
