@@ -1,8 +1,8 @@
 // assets/js/schedule-widget.js
 // - One-row platforms
 // - No duplicate first stream
-// - Countdown moved to end
-// - RO month: remove trailing dot; capitalize weekday
+// - Countdown moved to RIGHT on expanded rows
+// - RO month: remove trailing dot; capitalize month; capitalize weekday
 
 (function () {
   const root = document.getElementById("ap-schedule");
@@ -54,32 +54,34 @@
       renderPlatforms(data.phrases.alsoLive);
       noteEl.textContent = data.phrases.tzNote;
 
-      // NEXT line (weekday capitalized, month w/o dot; countdown last)
+      // NEXT line (weekday capitalized, month without dot + capitalized; countdown last line)
       if (data.next) {
         const label = data.next.game || data.next.title || "";
-        const niceDate = prettifyDate(data.next.dateText);
+        const niceDate = prettifyRoDate(data.next.dateText);
         nextEl.innerHTML =
           `<strong>${escapeHtml(data.phrases.headline)}:</strong> ` +
-          `<span class="ap-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(data.next.timeText)}</span> ` +
+          `<span class="ap-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(data.next.timeText)}</span>` +
           (label ? `<div class="ap-game">— ${escapeHtml(label)}</div>` : "") +
-          ` <span class="ap-in">${escapeHtml(data.next.inText)}</span>`;
+          `<div class="ap-in">${escapeHtml(data.next.inText)}</div>`;
       } else {
         nextEl.textContent = "—";
       }
 
-      // Expanded list: show exactly next 3 (no duplication)
+      // Expanded list: show exactly next 3 (no duplication of the first)
       listEl.innerHTML = "";
       const more = (data.items || []).slice(1, 4);
       more.forEach((it) => {
         const label = it.game || it.title || "";
-        const niceDate = prettifyDate(it.dateText);
+        const niceDate = prettifyRoDate(it.dateText);
         const li = document.createElement("li");
         li.className = "ap-li";
         li.innerHTML =
           `<div class="ap-li-row">` +
-            `<span class="ap-li-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(it.timeText)}</span>` +
-            (label ? `<span class="ap-li-title"> — ${escapeHtml(label)}</span>` : "") +
-            ` <span class="ap-li-in">${escapeHtml(it.inText)}</span>` +
+            `<div class="ap-li-left">` +
+              `<span class="ap-li-when">${escapeHtml(capitalizeFirst(niceDate))}, ${escapeHtml(it.timeText)}</span>` +
+              (label ? `<span class="ap-li-title"> — ${escapeHtml(label)}</span>` : "") +
+            `</div>` +
+            `<span class="ap-li-in">${escapeHtml(it.inText)}</span>` + // ➜ RIGHT SIDE
           `</div>`;
         listEl.appendChild(li);
       });
@@ -106,10 +108,21 @@
       console.error(err);
     });
 
-  function prettifyDate(s) {
-    // remove dot before comma in month abbreviations: "nov.," -> "nov,"
-    return String(s || "").replace(/([A-Za-zăâîșț]+)\.,/gi, "$1,");
+  // ---- helpers ----
+  function prettifyRoDate(s) {
+    // 1) Remove trailing dot before comma on month: "nov.," -> "nov,"
+    let out = String(s || "").replace(/([A-Za-zĂÂÎȘȚăâîșț]+)\.\s*,/g, "$1,");
+    // 2) Capitalize month (ro short names)
+    const roMonths = {
+      "ian": "Ian", "feb": "Feb", "mar": "Mar", "apr": "Apr", "mai": "Mai",
+      "iun": "Iun", "iul": "Iul", "aug": "Aug", "sept": "Sept",
+      "oct": "Oct", "nov": "Nov", "dec": "Dec"
+    };
+    out = out.replace(/\b(ian|feb|mar|apr|mai|iun|iul|aug|sept|oct|nov|dec)\b/gi,
+      (m) => roMonths[m.toLowerCase()] || m);
+    return out;
   }
+
   function escapeHtml(s) {
     return String(s ?? "")
       .replace(/&/g, "&amp;").replace(/</g, "&lt;")
