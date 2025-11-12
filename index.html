@@ -58,29 +58,32 @@
     <a class="link" href="https://www.tipeeestream.com/angelopab/donation" target="_blank"><img src="assets/img/tipeee.png"><span>Donate via TipeeeStream</span></a>
 
     
-<!-- START: AP SCHEDULE -->
+<!-- START: AP SCHEDULE WIDGET -->
+<link rel="stylesheet" href="assets/css/schedule-widget.css?v=1.0.0">
+
 <div class="section-title">• STREAM SCHEDULE •</div>
 <section class="ap-schedule" id="ap-schedule" aria-live="polite">
   <div class="ap-card">
-<div class="ap-platforms" id="ap-platforms">
-  <!-- JS will localize the prefix (“Also live on / Sunt LIVE și pe”) -->
-  <span class="ap-prefix">Also live on:</span>
-  <a class="ap-chip" href="https://www.twitch.tv/AngeloPab" target="_blank" rel="noopener">
-    <img src="assets/img/twitch.png" alt="" loading="lazy"> Twitch
-  </a>
-  <span class="ap-sep">·</span>
-  <a class="ap-chip" href="https://www.youtube.com/@angelopabtv" target="_blank" rel="noopener">
-    <img src="assets/img/youtube.png" alt="" loading="lazy"> YouTube
-  </a>
-  <span class="ap-sep">·</span>
-  <a class="ap-chip" href="https://kick.com/AngeloPab" target="_blank" rel="noopener">
-    <img src="assets/img/kick.png" alt="" loading="lazy"> Kick
-  </a>
-  <span class="ap-sep">·</span>
-  <a class="ap-chip" href="https://www.tiktok.com/@angelopabtv" target="_blank" rel="noopener">
-    <img src="assets/img/tiktok.png" alt="" loading="lazy"> TikTok
-  </a>
-</div>
+    <div class="ap-platforms" id="ap-platforms">
+      <!-- JS will render: 'Also live on:' + icons + text (Twitch/YouTube/Kick/TikTok) -->
+      <span class="ap-prefix">Also live on:</span>
+      <span class="ap-sep"> </span>
+      <a class="ap-chip" href="https://www.twitch.tv/AngeloPab" target="_blank" rel="noopener">
+        <img src="https://api.angelopab.com/img/twitch.png?w=20&h=20" alt=""> Twitch
+      </a>
+      <span class="ap-sep">·</span>
+      <a class="ap-chip" href="https://www.youtube.com/@angelopabtv" target="_blank" rel="noopener">
+        <img src="https://api.angelopab.com/img/youtube.png?w=20&h=20" alt=""> YouTube
+      </a>
+      <span class="ap-sep">·</span>
+      <a class="ap-chip" href="https://kick.com/AngeloPab" target="_blank" rel="noopener">
+        <img src="https://api.angelopab.com/img/kick.png?w=20&h=20" alt=""> Kick
+      </a>
+      <span class="ap-sep">·</span>
+      <a class="ap-chip" href="https://www.tiktok.com/@angelopabtv" target="_blank" rel="noopener">
+        <img src="https://api.angelopab.com/img/tiktok.png?w=20&h=20" alt=""> TikTok
+      </a>
+    </div>
 
     <div id="ap-next" class="ap-next">Loading next stream…</div>
     <button id="ap-toggle" class="ap-btn" type="button" aria-expanded="false">Show next streams</button>
@@ -90,10 +93,9 @@
   </div>
 </section>
 
+<script src="assets/js/schedule-widget.js?v=1.0.0" defer></script>
+<!-- END: AP SCHEDULE WIDGET -->
 
-
-<script src="assets/js/schedule-widget.js?v=1.0.0"></script>
-<!-- END: AP SCHEDULE -->
 
 <div class="email">📬 Contact: <a href="mailto:contact@angelopab.com">contact@angelopab.com</a></div>
   </div>
