@@ -14,7 +14,7 @@
   /* Center the whole panel */
   display: flex;
   justify-content: center;
-  padding: 0 12px;
+  padding: 0;
 }
 
 .ap-schedule .ap-card {
