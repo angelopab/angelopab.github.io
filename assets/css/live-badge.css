@@ -98,3 +98,25 @@
     transform: translate(-50%, 0);
   }
 }
+
+/* === AngeloPab 2025 live avatar glow enhancements === */
+
+.live-avatar[data-live="on"] .live-avatar__img {
+  box-shadow:
+    0 0 0 3px rgba(255, 45, 85, 0.7),
+    0 0 30px rgba(255, 45, 85, 0.8);
+  animation: live-glow 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes live-glow {
+  from {
+    box-shadow:
+      0 0 0 2px rgba(255, 45, 85, 0.6),
+      0 0 16px rgba(255, 45, 85, 0.55);
+  }
+  to {
+    box-shadow:
+      0 0 0 4px rgba(255, 122, 0, 0.9),
+      0 0 32px rgba(255, 45, 85, 0.95);
+  }
+}

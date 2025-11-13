@@ -163,3 +163,49 @@
     height: 16px;
   }
 }
+
+
+/* === AngeloPab 2025 schedule visual enhancements === */
+
+.ap-schedule {
+  color: var(--ap-text);
+  display: flex;
+  justify-content: center;
+  padding: 4px 12px 0;
+}
+
+.ap-schedule .ap-card {
+  background: radial-gradient(circle at top,
+      #1d2230 0%,
+      #151821 50%,
+      #101010 100%);
+  border-top: 6px solid var(--ap-accent);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
+  width: min(680px, 100%);
+  max-width: 920px;
+  margin: 8px auto 0;
+}
+
+#ap-next {
+  font-size: clamp(1rem, 1.2vw + .7rem, 1.35rem);
+  line-height: 1.5;
+  margin: .2rem 0 .8rem;
+  text-align: center;
+  position: relative;
+  padding-top: 0.2rem;
+}
+
+#ap-next::before {
+  content: "📺";
+  display: block;
+  font-size: 1.2rem;
+  margin-bottom: 0.15rem;
+  opacity: 0.9;
+}
+
+#ap-list .ap-li-when::before {
+  content: "📅 ";
+  opacity: 0.85;
+}
