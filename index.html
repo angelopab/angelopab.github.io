@@ -42,15 +42,11 @@
       <span class="live-pill" aria-hidden="true">LIVE NOW</span>
     </div>
     <h1>@AngeloPab</h1>
-<div class="tagline">Content Creator</div>
-<p class="bio" data-lang="en">
-  I’m Angelo – a sim & farming content creator who loves cozy fields, long convoys,
-  and building tech that makes gaming more fun for my community.
-</p>
-<p class="bio" data-lang="ro">
-  Sunt Angelo – creator de conținut de simulatoare și farming, pasionat de câmpuri liniștite,
-  convoiuri lungi și un strop de magie tehnică pentru comunitatea mea.
-</p>
+    <div class="tagline">Content Creator</div>
+    <p class="bio">
+      I’m Angelo – a sim & farming content creator who loves cozy fields, long convoys,
+      and building tech that makes gaming more fun for my community.
+    </p>
 
     <div class="icons">
       <a href="mailto:contact@angelopab.com"><img src="assets/img/email.png" alt="Email"></a>
@@ -112,44 +108,30 @@
   <script src="assets/js/live-badge.js?v=1.0.0"></script>
   <script>
     (function() {
-      try {
-        var isRo = (navigator.language || navigator.userLanguage || '').toLowerCase().indexOf('ro') === 0;
+      fetch("https://api.angelopab.com/schedule-json")
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (!data || !data.phrases) return;
+          var p = data.phrases;
 
-        // Bio
-        var bios = document.querySelectorAll('.bio');
-        bios.forEach(function(el) {
-          var lang = (el.getAttribute('data-lang') || 'en').toLowerCase();
-          el.style.display = (isRo ? lang === 'ro' : lang === 'en') ? 'block' : 'none';
+          var tagline = document.querySelector(".tagline");
+          if (tagline && p.uiTagline) tagline.textContent = p.uiTagline;
+
+          var bio = document.querySelector(".bio");
+          if (bio && p.uiBio) bio.textContent = p.uiBio;
+
+          var secSocial = document.querySelector(".section-title[data-section='social']");
+          if (secSocial && p.uiSocialTitle) secSocial.textContent = p.uiSocialTitle;
+
+          var secSched = document.querySelector(".section-title[data-section='schedule']");
+          if (secSched && p.uiScheduleTitle) secSched.textContent = p.uiScheduleTitle;
+
+          var footMain = document.querySelector(".site-footer__main");
+          if (footMain && p.uiFooterMain) footMain.textContent = p.uiFooterMain;
+        })
+        .catch(function() {
+          // keep English defaults on error
         });
-
-        // Tagline under name
-        var tagline = document.querySelector('.tagline');
-        if (tagline) {
-          tagline.textContent = isRo ? 'Creator de conținut' : 'Content Creator';
-        }
-
-        // Section titles
-        var secSocial = document.querySelector('.section-title[data-section="social"]');
-        if (secSocial) {
-          secSocial.textContent = isRo ? '• LINK-URI SOCIALE •' : '• SOCIAL LINKS •';
-        }
-        var secSched = document.querySelector('.section-title[data-section="schedule"]');
-        if (secSched) {
-          secSched.textContent = isRo ? '• PROGRAM LIVE •' : '• STREAM SCHEDULE •';
-        }
-
-        // Footer main line
-        var footMain = document.querySelector('.site-footer__main');
-        if (footMain) {
-          footMain.textContent = isRo
-            ? '© 2025 AngeloPab · Toate drepturile rezervate.'
-            : '© 2025 AngeloPab · All rights reserved.';
-        }
-      } catch (e) {
-        // fail-safe: show English bio
-        var biosEn = document.querySelectorAll('.bio[data-lang="en"]');
-        biosEn.forEach(function(el) { el.style.display = 'block'; });
-      }
     })();
   </script>
 </body>
