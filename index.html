@@ -42,11 +42,15 @@
       <span class="live-pill" aria-hidden="true">LIVE NOW</span>
     </div>
     <h1>@AngeloPab</h1>
-    <div class="tagline">Content Creator</div>
-    <p class="bio">
-      I’m Angelo – a sim & farming content creator who loves cozy fields, long convoys,
-      and building tech that makes gaming more fun for my community.
-    </p>
+<div class="tagline">Content Creator</div>
+<p class="bio" data-lang="en">
+  I’m Angelo – a sim & farming content creator who loves cozy fields, long convoys,
+  and building tech that makes gaming more fun for my community.
+</p>
+<p class="bio" data-lang="ro">
+  Sunt Angelo – creator de conținut de simulatoare și farming, pasionat de câmpuri liniștite,
+  convoiuri lungi și un strop de magie tehnică pentru comunitatea mea.
+</p>
 
     <div class="icons">
       <a href="mailto:contact@angelopab.com"><img src="assets/img/email.png" alt="Email"></a>
@@ -57,7 +61,7 @@
       <a href="https://www.tiktok.com/@angelopabtv" target="_blank"><img src="assets/img/tiktok.png" alt="TikTok"></a>
     </div>
 
-    <div class="section-title">• SOCIAL LINKS •</div>
+    <div class="section-title" data-section="social">• SOCIAL LINKS •</div>
     <a class="link" href="https://www.twitch.tv/AngeloPab" target="_blank"><img
         src="assets/img/twitch.png"><span>Twitch</span></a>
     <a class="link" href="https://www.youtube.com/@angelopabtv/shorts" target="_blank"><img
@@ -81,7 +85,7 @@
     <!-- START: AP SCHEDULE WIDGET -->
     <link rel="stylesheet" href="assets/css/schedule-widget.css?v=1.1.2">
 
-    <div class="section-title">• STREAM SCHEDULE •</div>
+    <div class="section-title" data-section="schedule">• STREAM SCHEDULE •</div>
     <section class="ap-schedule" id="ap-schedule" aria-live="polite">
       <div class="ap-card">
         <div class="ap-platforms" id="ap-platforms"></div> <!-- empty: JS will render -->
@@ -98,9 +102,65 @@
 
 
 
-    <div class="email">📬 Contact: <a href="mailto:contact@angelopab.com">contact@angelopab.com</a></div>
+<footer class="site-footer">
+  <div class="site-footer__main">© 2025 AngeloPab · All rights reserved.</div>
+  <div class="site-footer__contact">
+    📬 Contact: <a href="mailto:contact@angelopab.com">contact@angelopab.com</a>
+  </div>
+</footer>
   </div>
   <script src="assets/js/live-badge.js?v=1.0.0"></script>
+  <script>
+    // ANGELPAB_I18N
+    (function() {
+      try {
+        var userLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+        var lang = userLang.indexOf('ro') === 0 ? 'ro' : 'en';
+
+        var translations = {
+          en: {
+            tagline: 'Content Creator',
+            section_social: '\u2022 SOCIAL LINKS \u2022',
+            section_schedule: '\u2022 STREAM SCHEDULE \u2022',
+            ap_note: '\ud83c\udf10 Times are shown in your local timezone',
+            footer_main: '\u00a9 2025 AngeloPab \b7 All rights reserved.'
+          },
+          ro: {
+            tagline: 'Creator de conținut',
+            section_social: '\u2022 LINK-URI SOCIALE \u2022',
+            section_schedule: '\u2022 PROGRAM LIVE \u2022',
+            ap_note: '\ud83c\udf10 Orele sunt afișate în fusul tău orar',
+            footer_main: '\u00a9 2025 AngeloPab \b7 Toate drepturile rezervate.'
+          }
+        };
+
+        // bios
+        var bios = document.querySelectorAll('.bio');
+        bios.forEach(function(el) {
+          var elLang = (el.getAttribute('data-lang') || 'en').toLowerCase();
+          el.style.display = (lang === elLang) ? 'block' : 'none';
+        });
+
+        function applyText(key, selector) {
+          var el = document.querySelector(selector);
+          if (!el) return;
+          var t = translations[lang] && translations[lang][key];
+          if (!t) return;
+          el.textContent = t;
+        }
+
+        applyText('tagline', '.tagline');
+        applyText('section_social', '.section-title[data-section="social"]');
+        applyText('section_schedule', '.section-title[data-section="schedule"]');
+        applyText('ap_note', '.ap-note');
+        applyText('footer_main', '.site-footer__main');
+      } catch (e) {
+        // fail-safe: show English bio
+        var biosEn = document.querySelectorAll('.bio[data-lang="en"]');
+        biosEn.forEach(function(el) { el.style.display = 'block'; });
+      }
+    })();
+  </script>
 </body>
 
 </html>
