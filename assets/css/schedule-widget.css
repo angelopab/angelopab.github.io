@@ -1,5 +1,5 @@
 /* assets/css/schedule-widget.css */
-/* Your site theme + right-aligned estimation in expanded rows */
+/* Dark theme, centered card, mobile-friendly platform row */
 
 :root {
   --ap-accent: #2864d4;
@@ -11,6 +11,10 @@
 
 .ap-schedule {
   color: var(--ap-text);
+  /* Center the whole panel */
+  display: flex;
+  justify-content: center;
+  padding: 0 12px;
 }
 
 .ap-schedule .ap-card {
@@ -18,7 +22,9 @@
   border-top: 6px solid var(--ap-accent);
   border-radius: 18px;
   padding: 18px;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, .35);
+  box-shadow: 0 16px 32px rgba(0,0,0,.35);
+  /* Responsive centered width */
+  width: min(680px, 100%);
   max-width: 920px;
   margin: 0 auto;
 }
@@ -29,24 +35,26 @@
   margin-bottom: .6rem;
   text-align: center;
 }
-
 #ap-platforms .ap-prefix {
   color: var(--ap-dim);
   font-weight: 600;
-  margin-right: .5rem;
   display: block;
-  margin-bottom: .25rem;
+  margin: 0 0 .25rem;
 }
-
 #ap-platforms .ap-plat-row {
   display: flex;
   flex-wrap: nowrap;
   white-space: nowrap;
-  overflow-x: auto;
   gap: .4rem;
   align-items: center;
   justify-content: center;
+
+  /* Fallback: allow horizontal scroll if still too tight */
+  overflow-x: auto;
+  -ms-overflow-style: none;      /* IE/Edge */
+  scrollbar-width: none;         /* Firefox */
 }
+#ap-platforms .ap-plat-row::-webkit-scrollbar { display: none; }
 
 #ap-platforms .ap-chip {
   display: inline-flex;
@@ -54,16 +62,12 @@
   gap: .4rem;
   padding: .25rem .5rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, .06);
+  background: rgba(255,255,255,.06);
   text-decoration: none;
   color: var(--ap-text);
   font-weight: 600;
 }
-
-#ap-platforms .ap-chip:hover {
-  background: rgba(255, 255, 255, .1);
-}
-
+#ap-platforms .ap-chip:hover { background: rgba(255,255,255,.1); }
 #ap-platforms .ap-chip img {
   width: 20px;
   height: 20px;
@@ -78,19 +82,9 @@
   margin: .2rem 0 .8rem;
   text-align: center;
 }
-
-#ap-next .ap-when {
-  font-weight: 800;
-}
-
-#ap-next .ap-in {
-  margin-top: .25rem;
-  color: var(--ap-dim);
-}
-
-#ap-next .ap-game {
-  opacity: .95;
-}
+#ap-next .ap-when { font-weight: 800; }
+#ap-next .ap-in   { margin-top: .25rem; color: var(--ap-dim); }
+#ap-next .ap-game { opacity: .95; }
 
 /* Button */
 #ap-toggle {
@@ -107,24 +101,16 @@
   font-size: clamp(.95rem, .8vw + .6rem, 1.05rem);
   transition: filter .2s ease;
 }
-
-#ap-toggle:hover {
-  filter: brightness(1.08);
-}
+#ap-toggle:hover { filter: brightness(1.08); }
 
 /* List */
 #ap-list {
-  margin: .8rem 0 0 0;
+  margin: .8rem 0 0;
   padding: 0;
   list-style: none;
   border-top: 1px solid var(--ap-border);
 }
-
-#ap-list .ap-li {
-  padding: .6rem 0;
-  border-bottom: 1px solid var(--ap-border);
-}
-
+#ap-list .ap-li { padding: .6rem 0; border-bottom: 1px solid var(--ap-border); }
 #ap-list .ap-li-row {
   display: flex;
   align-items: baseline;
@@ -132,48 +118,48 @@
   gap: .75rem;
   flex-wrap: wrap;
 }
-
 #ap-list .ap-li-left {
   display: flex;
   align-items: baseline;
   gap: .35rem;
   flex-wrap: wrap;
 }
-
-#ap-list .ap-li-when {
-  font-weight: 800;
-}
-
-#ap-list .ap-li-title {
-  opacity: .95;
-}
-
-#ap-list .ap-li-in {
-  color: var(--ap-dim);
-  white-space: nowrap;
-  margin-left: auto;
-}
+#ap-list .ap-li-when  { font-weight: 800; }
+#ap-list .ap-li-title { opacity: .95; }
+#ap-list .ap-li-in    { color: var(--ap-dim); white-space: nowrap; margin-left: auto; }
 
 /* Note + error */
-.ap-note {
-  margin-top: .75rem;
-  color: var(--ap-dim);
-  font-size: .95rem;
-}
+.ap-note { margin-top: .75rem; color: var(--ap-dim); font-size: .95rem; }
+#ap-error { color: #ff8080; margin-top: .5rem; }
 
-#ap-error {
-  color: #ff8080;
-  margin-top: .5rem;
-}
-
-/* Responsive */
+/* ---------- Mobile tweaks ---------- */
 @media (max-width: 520px) {
-  .ap-schedule .ap-card {
-    border-radius: 14px;
-    padding: 14px;
-  }
+  .ap-schedule .ap-card { border-radius: 14px; padding: 14px; }
+  #ap-toggle { border-radius: 12px; }
 
-  #ap-toggle {
-    border-radius: 12px;
+  /* Let platform chips wrap to two lines and tighten spacing */
+  #ap-platforms .ap-plat-row {
+    flex-wrap: wrap;
+    row-gap: .35rem;
+  }
+  #ap-platforms .ap-chip {
+    padding: .2rem .45rem;
+    font-size: .95rem;
+  }
+  #ap-platforms .ap-chip img {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Even tighter for very small phones */
+@media (max-width: 360px) {
+  #ap-platforms .ap-chip {
+    padding: .18rem .4rem;
+    font-size: .9rem;
+  }
+  #ap-platforms .ap-chip img {
+    width: 16px;
+    height: 16px;
   }
 }
