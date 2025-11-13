@@ -131,3 +131,14 @@ h1 {
 .site-footer__contact a:hover {
   text-decoration: underline;
 }
+
+
+/* Footer spacing tweaks */
+.site-footer {
+  margin-top: 56px;
+  padding-top: 18px;
+}
+
+.site-footer__contact {
+  margin-bottom: 4px;
+}

@@ -237,3 +237,23 @@
   align-self: flex-end;
   font-size: 0.95rem;
 }
+
+
+/* Calendar icon + compact rows in expanded list */
+#ap-list .ap-li {
+  padding: 0.45rem 0;
+}
+
+#ap-list .ap-li-when {
+  font-weight: 800;
+  white-space: nowrap;
+  position: relative;
+  padding-left: 1.4rem;
+}
+
+#ap-list .ap-li-when::before {
+  content: "📅";
+  position: absolute;
+  left: 0;
+  top: 0;
+}
