@@ -111,49 +111,40 @@
   </div>
   <script src="assets/js/live-badge.js?v=1.0.0"></script>
   <script>
-    // ANGELPAB_I18N
     (function() {
       try {
-        var userLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
-        var lang = userLang.indexOf('ro') === 0 ? 'ro' : 'en';
+        var isRo = (navigator.language || navigator.userLanguage || '').toLowerCase().indexOf('ro') === 0;
 
-        var translations = {
-          en: {
-            tagline: 'Content Creator',
-            section_social: '\u2022 SOCIAL LINKS \u2022',
-            section_schedule: '\u2022 STREAM SCHEDULE \u2022',
-            ap_note: '\ud83c\udf10 Times are shown in your local timezone',
-            footer_main: '\u00a9 2025 AngeloPab \b7 All rights reserved.'
-          },
-          ro: {
-            tagline: 'Creator de conținut',
-            section_social: '\u2022 LINK-URI SOCIALE \u2022',
-            section_schedule: '\u2022 PROGRAM LIVE \u2022',
-            ap_note: '\ud83c\udf10 Orele sunt afișate în fusul tău orar',
-            footer_main: '\u00a9 2025 AngeloPab \b7 Toate drepturile rezervate.'
-          }
-        };
-
-        // bios
+        // Bio
         var bios = document.querySelectorAll('.bio');
         bios.forEach(function(el) {
-          var elLang = (el.getAttribute('data-lang') || 'en').toLowerCase();
-          el.style.display = (lang === elLang) ? 'block' : 'none';
+          var lang = (el.getAttribute('data-lang') || 'en').toLowerCase();
+          el.style.display = (isRo ? lang === 'ro' : lang === 'en') ? 'block' : 'none';
         });
 
-        function applyText(key, selector) {
-          var el = document.querySelector(selector);
-          if (!el) return;
-          var t = translations[lang] && translations[lang][key];
-          if (!t) return;
-          el.textContent = t;
+        // Tagline under name
+        var tagline = document.querySelector('.tagline');
+        if (tagline) {
+          tagline.textContent = isRo ? 'Creator de conținut' : 'Content Creator';
         }
 
-        applyText('tagline', '.tagline');
-        applyText('section_social', '.section-title[data-section="social"]');
-        applyText('section_schedule', '.section-title[data-section="schedule"]');
-        applyText('ap_note', '.ap-note');
-        applyText('footer_main', '.site-footer__main');
+        // Section titles
+        var secSocial = document.querySelector('.section-title[data-section="social"]');
+        if (secSocial) {
+          secSocial.textContent = isRo ? '• LINK-URI SOCIALE •' : '• SOCIAL LINKS •';
+        }
+        var secSched = document.querySelector('.section-title[data-section="schedule"]');
+        if (secSched) {
+          secSched.textContent = isRo ? '• PROGRAM LIVE •' : '• STREAM SCHEDULE •';
+        }
+
+        // Footer main line
+        var footMain = document.querySelector('.site-footer__main');
+        if (footMain) {
+          footMain.textContent = isRo
+            ? '© 2025 AngeloPab · Toate drepturile rezervate.'
+            : '© 2025 AngeloPab · All rights reserved.';
+        }
       } catch (e) {
         // fail-safe: show English bio
         var biosEn = document.querySelectorAll('.bio[data-lang="en"]');

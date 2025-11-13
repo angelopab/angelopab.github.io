@@ -200,3 +200,40 @@
   white-space: nowrap;
   margin-left: auto;
 }
+
+
+/* === AngeloPab schedule layout tweak: full game name + "in" on second line right === */
+#ap-list .ap-li-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+}
+
+#ap-list .ap-li-left {
+  display: flex;
+  align-items: baseline;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
+#ap-list .ap-li-when {
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+#ap-list .ap-li-title {
+  opacity: .95;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: initial;
+}
+
+#ap-list .ap-li-in {
+  color: var(--ap-dim);
+  white-space: nowrap;
+  margin-left: 0;
+  text-align: right;
+  align-self: flex-end;
+  font-size: 0.95rem;
+}
