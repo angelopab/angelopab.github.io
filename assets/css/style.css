@@ -100,45 +100,94 @@ h1 {
   text-decoration: underline;
 }
 
-/* Bio text under tagline */
-.bio {
-  max-width: 420px;
-  margin: 10px auto 22px;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: #d0d0d0;
+/* === AngeloPab Gradient Background + Layout Restore === */
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(circle at top, #1c1c22 0%, #050508 55%, #000000 100%);
+  color: #ffffff;
+  margin: 0;
+  padding: 0;
 }
 
-/* Footer */
-.site-footer {
-  margin-top: 40px;
-  padding-top: 16px;
-  font-size: 0.85em;
-  color: #b5b5b5;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
+.container {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 48px 20px 40px;
   text-align: center;
 }
 
-.site-footer__main {
-  margin-bottom: 4px;
+/* Bio text */
+.bio {
+  max-width: 360px;
+  margin: 10px auto 22px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #c6c6c6;
 }
 
-.site-footer__contact a {
-  color: #4ea1ff;
+/* Section titles */
+.section-title {
+  margin-top: 32px;
+  margin-bottom: 16px;
+  font-weight: bold;
+  color: #ccc;
+  text-transform: uppercase;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+}
+
+/* Link buttons – premium blue theme */
+.link {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  overflow: hidden;
+
+  background-color: #2864d4;
+  color: white;
+  padding: 10px 14px;
+  margin: 10px auto;
+  border-radius: 14px;
   text-decoration: none;
+  font-weight: bold;
+  max-width: 100%;
+  width: 100%;
+
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.45);
+  transform: translateY(0);
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-.site-footer__contact a:hover {
-  text-decoration: underline;
+.link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left,
+      rgba(255, 255, 255, 0.16),
+      transparent 55%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
-
-/* Footer spacing tweaks */
-.site-footer {
-  margin-top: 56px;
-  padding-top: 18px;
+.link:hover {
+  background-color: #2f73ff;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.6);
 }
 
-.site-footer__contact {
-  margin-bottom: 4px;
+.link:hover::after {
+  opacity: 1;
+}
+
+/* Wider layout on larger screens so schedule text fits better */
+@media (min-width: 768px) {
+  .container {
+    max-width: 480px;  /* you can try 500 if you want even wider */
+  }
 }
