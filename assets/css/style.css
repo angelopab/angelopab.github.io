@@ -88,7 +88,7 @@ h1 {
 .email {
   margin-top: 30px;
   font-size: 0.9em;
-  color: #ccc;
+  color: #e8e8e8;
 }
 
 .email a {
@@ -190,4 +190,38 @@ body {
   .container {
     max-width: 480px;  /* you can try 500 if you want even wider */
   }
+}
+
+/* Footer */
+.site-footer {
+  margin-top: 10px;
+  padding-top: 16px;
+  font-size: 0.85em;
+  color: #e8e8e8;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  text-align: center;
+}
+
+.site-footer__main {
+  margin-bottom: 4px;
+}
+
+.site-footer__contact a {
+  color: #4ea1ff;
+  text-decoration: none;
+}
+
+.site-footer__contact a:hover {
+  text-decoration: underline;
+}
+
+
+/* Footer spacing tweaks */
+.site-footer {
+  margin-top: 26px;
+  padding-top: 18px;
+}
+
+.site-footer__contact {
+  margin-bottom: 4px;
 }
