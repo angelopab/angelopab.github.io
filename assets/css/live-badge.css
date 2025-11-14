@@ -227,3 +227,24 @@
     transform: translateY(0) scale(1);
   }
 }
+/* === Mobile fix: Move LIVE pill below the avatar === */
+@media (max-width: 480px) {
+
+  /* Add spacing under the avatar so the pill doesn’t overlap */
+  .live-avatar {
+    margin-bottom: 26px; /* adjust if needed */
+  }
+
+  /* Position the pill fully below the image */
+  .live-avatar .live-pill {
+    left: 50%;
+    bottom: -22px;       /* move below the circle */
+    transform: translateX(-50%);
+    padding: 6px 14px;
+  }
+
+  /* Keep the animated state clean */
+  .live-avatar[data-live="on"] .live-pill {
+    transform: translateX(-50%) translateY(0);
+  }
+}
