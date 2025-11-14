@@ -98,3 +98,132 @@
     transform: translate(-50%, 0);
   }
 }
+
+/* === AngeloPab 2025 live avatar glow enhancements === */
+
+.live-avatar[data-live="on"] .live-avatar__img {
+  box-shadow:
+    0 0 0 3px rgba(255, 45, 85, 0.7),
+    0 0 30px rgba(255, 45, 85, 0.8);
+  animation: live-glow 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes live-glow {
+  from {
+    box-shadow:
+      0 0 0 2px rgba(255, 45, 85, 0.6),
+      0 0 16px rgba(255, 45, 85, 0.55);
+  }
+  to {
+    box-shadow:
+      0 0 0 4px rgba(255, 122, 0, 0.9),
+      0 0 32px rgba(255, 45, 85, 0.95);
+  }
+}
+
+
+/* Outer neon halo + ripples when live */
+.live-avatar::after {
+  content: "";
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 45, 85, 0.4), transparent 60%);
+  opacity: 0;
+  z-index: -2;
+  transform: scale(0.9);
+  transition: opacity 0.2s ease;
+}
+
+.live-avatar[data-live="on"]::after {
+  opacity: 1;
+  animation: live-halo 2.4s ease-in-out infinite;
+}
+
+@keyframes live-halo {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0.2;
+  }
+}
+
+/* Overall glow shadow when live */
+.live-avatar[data-live="on"] {
+  box-shadow:
+    0 0 35px rgba(255, 45, 85, 0.55),
+    0 0 65px rgba(255, 122, 0, 0.45);
+}
+
+/* LIVE pill upgrade with glowing dot */
+.live-pill::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+  margin-right: 6px;
+  vertical-align: middle;
+  animation: live-dot 1.2s ease-in-out infinite;
+}
+
+@keyframes live-dot {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+}
+
+/* Slight breathing filter on avatar while live (gloss-like) */
+.live-avatar[data-live="on"] .live-avatar__img {
+  animation: live-glow 1.6s ease-in-out infinite alternate, live-breathe 6s ease-in-out infinite;
+}
+
+@keyframes live-breathe {
+  0% {
+    filter: brightness(1) contrast(1);
+  }
+  50% {
+    filter: brightness(1.08) contrast(1.05);
+  }
+  100% {
+    filter: brightness(1) contrast(1);
+  }
+}
+
+/* One-time bounce when going live */
+.live-avatar--bounce {
+  animation: live-bounce 0.9s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+}
+
+@keyframes live-bounce {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  35% {
+    transform: translateY(-6px) scale(1.03);
+  }
+  70% {
+    transform: translateY(1px) scale(0.99);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}

@@ -100,6 +100,33 @@ h1 {
   text-decoration: underline;
 }
 
+/* Bio text under tagline */
+.bio {
+  max-width: 420px;
+  margin: 10px auto 22px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #d0d0d0;
+}
+/* Live status line under bio */
+.live-status-line {
+  margin-top: 4px;
+  margin-bottom: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #ff8aa5;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  min-height: 0.9rem;
+}
+
+.live-status-line--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 /* === AngeloPab Gradient Background + Layout Restore === */
 
 body {
@@ -224,4 +251,18 @@ body {
 
 .site-footer__contact {
   margin-bottom: 4px;
+}
+
+/* Header polish to match neon/glass theme */
+h1 {
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+
+.tagline {
+  color: #b8b8b8;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.live-status-line {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
